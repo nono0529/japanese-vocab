@@ -4,14 +4,14 @@
    ============================ */
 
 const HOME_BGS = [
-  'linear-gradient(160deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(160deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(160deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(160deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(160deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(160deg, #fccb90 0%, #d57eeb 100%)',
-  'linear-gradient(160deg, #30cfd0 0%, #330867 100%)',
+  'linear-gradient(160deg, #3A6073 0%, #16222A 100%)',
+  'linear-gradient(160deg, #2C3E50 0%, #3498DB 100%)',
+  'linear-gradient(160deg, #1A2A6C 0%, #11998E 100%)',
+  'linear-gradient(160deg, #2D4059 0%, #4B6E8C 100%)',
+  'linear-gradient(160deg, #0B3D4B 0%, #2C9EAD 100%)',
+  'linear-gradient(160deg, #2E3B4E 0%, #50697C 100%)',
+  'linear-gradient(160deg, #1B3A4B 0%, #3D84A9 100%)',
+  'linear-gradient(160deg, #1F2D3D 0%, #374B5C 100%)',
 ];
 
 async function renderHome() {
@@ -55,7 +55,7 @@ async function renderHome() {
       </div>
 
       <!-- Learn Card -->
-      <div class="home-card" onclick="startLearn()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; border:none;">
+      <div class="home-card" onclick="startLearn()" style="background:linear-gradient(135deg, #3A6073 0%, #2C5364 100%); color:#fff; border:none;">
         <div class="home-card-icon">📖</div>
         <div class="home-card-title" style="color:#fff;">学习新词</div>
         <div class="home-card-count" style="color:rgba(255,255,255,0.8);">
@@ -65,7 +65,7 @@ async function renderHome() {
       </div>
 
       <!-- Review Card -->
-      <div class="home-card" onclick="startReview()" style="animation-delay:0.1s; background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color:#fff; border:none;">
+      <div class="home-card" onclick="startReview()" style="animation-delay:0.1s; background:linear-gradient(135deg, #2D4059 0%, #4B6E8C 100%); color:#fff; border:none;">
         <div class="home-card-icon">🔄</div>
         <div class="home-card-title" style="color:#fff;">复习巩固</div>
         <div class="home-card-count" style="color:rgba(255,255,255,0.8);">

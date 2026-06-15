@@ -135,27 +135,26 @@ async function renderStats() {
       <!-- Bar Chart -->
       <div style="padding:8px var(--space-md) 0; overflow-x:auto;">
         <div class="bar-chart" style="${statsMode === 'month' ? 'gap:1px;' : ''}">
-          ${days.map((day) => {
-            const learnH = maxVal > 0 ? ((day.wordsLearned || 0) / maxVal * 100) : 0;
-            const reviewH = maxVal > 0 ? ((day.wordsReviewed || 0) / maxVal * 100) : 0;
-            const isToday = day.date === today;
-            const isFuture = day.isFuture;
-            const dayOfWeek = new Date(day.date).getDay();
-            const hasData = (day.wordsLearned || 0) + (day.wordsReviewed || 0) > 0;
-
+          ${days.map((d) => {
+            const learnH = maxVal > 0 ? ((d.wordsLearned || 0) / maxVal * 100) : 0;
+            const reviewH = maxVal > 0 ? ((d.wordsReviewed || 0) / maxVal * 100) : 0;
+            const isToday = d.date === today;
+            const isFuture = d.isFuture;
+            const hasData = (d.wordsLearned || 0) + (d.wordsReviewed || 0) > 0;
             const showLearnCount = learnH > 15;
             const showReviewCount = reviewH > 15;
+            const wd = d.weekday;
 
             return `
               <div class="bar-col ${isToday ? 'today' : ''} ${isFuture ? 'future' : ''}"
-                   title="${day.date.slice(5)} 周${weekDays[dayOfWeek]}: 学${day.wordsLearned||0} 复${day.wordsReviewed||0}">
+                   title="${d.date.slice(5)} 周${weekDays[wd]}: 学${d.wordsLearned||0} 复${d.wordsReviewed||0}">
                 <div class="bar-stack" style="${isFuture ? 'opacity:0.25;' : ''}">
-                  ${reviewH > 0 ? `<div class="bar-review" style="height:${reviewH}%">${showReviewCount ? `<span class="bar-count">${day.wordsReviewed||0}</span>` : ''}</div>` : ''}
-                  ${learnH > 0 ? `<div class="bar-learn" style="height:${learnH}%">${showLearnCount ? `<span class="bar-count">${day.wordsLearned||0}</span>` : ''}</div>` : ''}
+                  ${reviewH > 0 ? `<div class="bar-review" style="height:${reviewH}%">${showReviewCount ? `<span class="bar-count">${d.wordsReviewed||0}</span>` : ''}</div>` : ''}
+                  ${learnH > 0 ? `<div class="bar-learn" style="height:${learnH}%">${showLearnCount ? `<span class="bar-count">${d.wordsLearned||0}</span>` : ''}</div>` : ''}
                   ${!hasData ? `<div class="bar-empty"></div>` : ''}
                 </div>
-                <div class="bar-label ${isToday ? '' : ''}" style="${isFuture ? 'opacity:0.3;' : ''}">
-                  ${statsMode === 'week' ? weekDays[dayOfWeek] : day.day}
+                <div class="bar-label" style="${isFuture ? 'opacity:0.3;' : ''}">
+                  ${statsMode === 'week' ? weekDays[wd] : d.day}
                 </div>
               </div>
             `;

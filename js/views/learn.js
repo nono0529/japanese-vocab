@@ -6,16 +6,14 @@
 let learnSession = null;
 
 const GRADS = [
-  'linear-gradient(160deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(160deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(160deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(160deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(160deg, #30cfd0 0%, #330867 100%)',
-  'linear-gradient(160deg, #0F2027 0%, #203A43 40%, #2C5364 100%)',
-  'linear-gradient(160deg, #8E2DE2 0%, #4A00E0 100%)',
-  'linear-gradient(160deg, #f12711 0%, #f5af19 100%)',
-  'linear-gradient(160deg, #11998e 0%, #38ef7d 100%)',
+  'linear-gradient(160deg, #2C3E50 0%, #3498DB 100%)',
+  'linear-gradient(160deg, #1A2A6C 0%, #11998E 50%, #38EF7D 100%)',
+  'linear-gradient(160deg, #3A6073 0%, #16222A 100%)',
+  'linear-gradient(160deg, #4A5C6A 0%, #2E3B4E 50%, #1A2A3A 100%)',
+  'linear-gradient(160deg, #0B3D4B 0%, #1A6B7A 50%, #2C9EAD 100%)',
+  'linear-gradient(160deg, #2D4059 0%, #4B6E8C 50%, #6B9BC0 100%)',
+  'linear-gradient(160deg, #1B3A4B 0%, #2C5F7C 50%, #3D84A9 100%)',
+  'linear-gradient(160deg, #1F2D3D 0%, #374B5C 50%, #50697C 100%)',
 ];
 
 async function getStoredBatch() {
@@ -146,15 +144,22 @@ function renderQuestionView(session) {
 
 /* ---- Tap blank area → replay audio ---- */
 function onTapBlankArea(e) {
-  // Only trigger if clicking the container itself or the word display area
+  // Only trigger if clicking the container or word display, not buttons
   if (e.target.closest('.learn-option-btn') || e.target.closest('.learn-menu-btn') ||
-      e.target.closest('.learn-progress') || e.target.closest('#learnAudioBtn')) {
+      e.target.closest('.learn-progress') || e.target.closest('.learn-audio-btn') ||
+      e.target.closest('.learn-next-btn')) {
     return;
   }
-  if (learnSession && learnSession.phase === 'question') {
+  if (learnSession) {
     const word = learnSession.words[learnSession.currentIndex];
     if (word && word.reading) {
       TTS.speakWord(word.reading);
+      // Brief visual pulse on the word area
+      const display = document.getElementById('learnWordDisplay') || e.currentTarget.querySelector('.learn-word-display');
+      if (display) {
+        display.style.transform = 'scale(1.02)';
+        setTimeout(() => { display.style.transform = ''; }, 150);
+      }
     }
   }
 }
@@ -169,7 +174,7 @@ function renderResultView(session) {
 
   return `
     <div class="learn-bg" style="background: ${session.gradient};"></div>
-    <div class="learn-container fade-in">
+    <div class="learn-container fade-in" onclick="onTapBlankArea(event)">
       <div class="learn-progress">
         <div class="learn-progress-bar-wrap">
           <div class="learn-progress-bar-fill" style="width:${(progress/total)*100}%"></div>

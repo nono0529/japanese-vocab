@@ -3,7 +3,7 @@
    Cache-first strategy for offline support
    ============================ */
 
-const CACHE_NAME = 'bubei-nihongo-v3';
+const CACHE_NAME = 'bubei-nihongo-v4';
 
 const PRECACHE_URLS = [
   './',

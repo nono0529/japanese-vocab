@@ -86,11 +86,13 @@ async function renderStats() {
             const dayOfWeek = new Date(day.date).getDay();
             const hasData = (day.wordsLearned || 0) + (day.wordsReviewed || 0) > 0;
 
+            const showLearnCount = learnH > 15;
+            const showReviewCount = reviewH > 15;
             return `
               <div class="bar-col ${isToday ? 'today' : ''}" title="${dateStr} 周${weekDays[dayOfWeek]}: 学${day.wordsLearned||0} 复${day.wordsReviewed||0}">
                 <div class="bar-stack">
-                  ${reviewH > 0 ? `<div class="bar-review" style="height:${reviewH}%"></div>` : ''}
-                  ${learnH > 0 ? `<div class="bar-learn" style="height:${learnH}%"></div>` : ''}
+                  ${reviewH > 0 ? `<div class="bar-review" style="height:${reviewH}%">${showReviewCount ? `<span class="bar-count">${day.wordsReviewed||0}</span>` : ''}</div>` : ''}
+                  ${learnH > 0 ? `<div class="bar-learn" style="height:${learnH}%">${showLearnCount ? `<span class="bar-count">${day.wordsLearned||0}</span>` : ''}</div>` : ''}
                   ${!hasData ? `<div class="bar-empty"></div>` : ''}
                 </div>
                 <div class="bar-label">${statsMode === 'week' ? weekDays[dayOfWeek] : dateStr.slice(3)}</div>

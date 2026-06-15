@@ -1,6 +1,6 @@
 /* ============================
-   不背日语 — Learn Flow v5
-   不背单词 Style: 10词/组, 答对3次毕业, 答错回炉
+   不背日语 — Learn Flow v6
+   固定10词/组, 答对3次毕业, 答错回炉, 点击空白发音
    ============================ */
 
 let learnSession = null;
@@ -18,47 +18,75 @@ const GRADS = [
   'linear-gradient(160deg, #0B0F19 0%, #1A2333 40%, #2D4059 100%)',
 ];
 
+async function getStoredBatch() {
+  const raw = await getSetting('learnBatchIds', '');
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+async function saveStoredBatch(ids) {
+  await setSetting('learnBatchIds', JSON.stringify(ids));
+}
+
 async function renderLearnFlow() {
   const batchSize = 10;
-
-  // Get words in learning phase: status = 'new' or 'learning', with learnStreak < 3
-  const allStates = await db.learningState.toArray();
-  const learningPoolIds = new Set(
-    allStates
-      .filter(s => (s.status === 'new' || s.status === 'learning') && (s.learnStreak || 0) < 3)
-      .map(s => s.wordId)
-  );
-
-  // Also include words that have NO learningState entry yet (fresh words)
   const allWords = await db.words.toArray();
-  const existingIds = new Set(allStates.map(s => s.wordId));
-  const freshWordIds = allWords.filter(w => !existingIds.has(w.localId)).map(w => w.localId);
+  const allStates = await db.learningState.toArray();
+  const stateMap = {};
+  allStates.forEach(s => { stateMap[s.wordId] = s; });
 
-  const poolIds = new Set([...learningPoolIds, ...freshWordIds]);
-  const poolWords = allWords.filter(w => poolIds.has(w.localId));
+  // Try to load existing batch
+  let storedIds = await getStoredBatch();
+  let batchWords = [];
 
-  if (poolWords.length === 0) {
-    return `<div class="empty-state" style="padding-top:80px;">
-      <div class="empty-state-icon">🎉</div>
-      <div class="empty-state-title">没有需要学习的词了！</div>
-      <div class="empty-state-desc">所有单词都已完成学习，去复习吧</div>
-      <button class="btn btn-primary mt-md" onclick="navigate('review')">去复习</button>
-    </div>`;
+  if (storedIds.length > 0) {
+    // Filter: words still in learning (not graduated, not mastered)
+    batchWords = storedIds
+      .map(id => allWords.find(w => w.localId === id))
+      .filter(w => {
+        if (!w) return false;
+        const s = stateMap[w.localId];
+        if (!s) return true; // no state yet = fresh
+        if (s.status === 'mastered') return false;
+        if (s.status === 'review' && (s.learnStreak || 0) >= 3) return false;
+        return (s.learnStreak || 0) < 3;
+      });
   }
 
-  // Prefer words with lower learnStreak, then random
-  const batch = shuffleArray(poolWords).slice(0, batchSize);
+  // If no stored batch or all graduated, pick new words
+  if (batchWords.length === 0) {
+    // Get words in learning pool: status = 'new' or 'learning', learnStreak < 3
+    const existingIds = new Set(allStates.map(s => s.wordId));
+    const poolWords = allWords.filter(w => {
+      if (!existingIds.has(w.localId)) return true; // fresh word
+      const s = stateMap[w.localId];
+      if (s.status === 'mastered') return false;
+      if (s.status === 'review' && (s.learnStreak || 0) >= 3) return false;
+      return (s.learnStreak || 0) < 3;
+    });
+
+    if (poolWords.length === 0) {
+      return `<div class="empty-state" style="padding-top:80px;">
+        <div class="empty-state-icon">🎉</div>
+        <div class="empty-state-title">没有需要学习的词了！</div>
+        <div class="empty-state-desc">所有单词都已完成学习，去复习吧</div>
+        <button class="btn btn-primary mt-md" onclick="navigate('review')">去复习</button>
+      </div>`;
+    }
+
+    batchWords = shuffleArray(poolWords).slice(0, batchSize);
+    await saveStoredBatch(batchWords.map(w => w.localId));
+  }
 
   learnSession = {
-    words: batch,
+    words: batchWords,
     currentIndex: 0,
     phase: 'question',
     correct: [],
     wrong: [],
-    correctCounts: {},   // wordId -> consecutive correct count THIS session
+    correctCounts: {},
     startTime: Date.now(),
     gradient: GRADS[Math.floor(Math.random() * GRADS.length)],
-    batchNum: 1,
   };
 
   return renderQuestionView(learnSession);
@@ -71,7 +99,6 @@ function renderQuestionView(session) {
   const total = session.words.length;
   const options = generateLearnOptions(word);
 
-  // Show learnStreak indicator
   const streak = session.correctCounts[word.localId] || 0;
   const streakDots = streak > 0
     ? `<div style="margin-top:4px; font-size:0.75rem; color:rgba(255,255,255,0.5);">${'●'.repeat(streak)}${'○'.repeat(3 - streak)}</div>`
@@ -79,7 +106,7 @@ function renderQuestionView(session) {
 
   return `
     <div class="learn-bg" style="background: ${session.gradient};"></div>
-    <div class="learn-container fade-in">
+    <div class="learn-container fade-in" onclick="onTapBlankArea(event)">
       <div class="learn-progress">
         <div class="learn-progress-bar-wrap">
           <div class="learn-progress-bar-fill" style="width:${(progress/total)*100}%"></div>
@@ -88,20 +115,17 @@ function renderQuestionView(session) {
         <button class="learn-menu-btn" onclick="event.stopPropagation(); showLearnMenu('${word.localId}')">⋯</button>
       </div>
 
-      <div class="learn-word-display">
+      <div class="learn-word-display" id="learnWordDisplay">
         <div class="learn-word-jp-lg">${escapeHTML(word.japanese)}</div>
         <div class="learn-word-rd">${escapeHTML(word.reading)}</div>
         ${streakDots}
-        <button class="learn-audio-btn" id="learnAudioBtn"
-                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.reading).replace(/'/g, "\\'")}')">
-          🔊 发音
-        </button>
+        <div class="learn-word-hint" style="margin-top:8px; color:rgba(255,255,255,0.25); font-size:0.75rem; letter-spacing:0.04em;">点按空白处听发音</div>
       </div>
 
       <div class="learn-options" id="learnOptions">
         ${options.map((opt, i) => `
           <button class="learn-option-btn" data-meaning="${escapeHTML(opt)}"
-                  onclick="onLearnAnswer('${escapeHTML(opt).replace(/'/g, "\\'")}', this)"
+                  onclick="event.stopPropagation(); onLearnAnswer('${escapeHTML(opt).replace(/'/g, "\\'")}', this)"
                   style="animation-delay:${i*0.06}s">
             ${escapeHTML(opt)}
           </button>
@@ -109,6 +133,21 @@ function renderQuestionView(session) {
       </div>
     </div>
   `;
+}
+
+/* ---- Tap blank area → replay audio ---- */
+function onTapBlankArea(e) {
+  // Only trigger if clicking the container itself or the word display area
+  if (e.target.closest('.learn-option-btn') || e.target.closest('.learn-menu-btn') ||
+      e.target.closest('.learn-progress') || e.target.closest('#learnAudioBtn')) {
+    return;
+  }
+  if (learnSession && learnSession.phase === 'question') {
+    const word = learnSession.words[learnSession.currentIndex];
+    if (word && word.reading) {
+      TTS.speakWord(word.reading);
+    }
+  }
 }
 
 /* ---- Result View ---- */
@@ -146,7 +185,7 @@ function renderResultView(session) {
         </button>
         <div class="learn-meaning-big">${escapeHTML(word.meaning)}</div>
         <div style="margin-top:8px; font-size:0.85rem; color:rgba(255,255,255,0.5);">
-          已连续答对 <b style="color:${wasCorrect ? '#34C759' : '#FF3B30'};">${streak}/3</b> 次
+          已连续答对 <b style="color:${streak >= 3 ? '#34C759' : wasCorrect ? '#34C759' : '#FF3B30'};">${streak}/3</b> 次
           ${streak >= 3 ? ' ✅ 已掌握' : ''}
         </div>
       </div>
@@ -203,6 +242,10 @@ function onLearnAnswer(choice, btnEl) {
   setTimeout(() => {
     const app = document.getElementById('app');
     app.innerHTML = renderResultView(learnSession);
+    // Auto-play audio when correct
+    if (isCorrect && word.reading) {
+      setTimeout(() => TTS.speakWord(word.reading), 200);
+    }
   }, 350);
 }
 
@@ -213,7 +256,6 @@ async function onLearnContinue() {
   const wasCorrect = learnSession.lastCorrect;
   const graduated = streak >= 3;
 
-  // Persist learnStreak to DB
   const existingState = await getLearningState(word.localId);
   const baseState = existingState || {
     status: 'new', easeFactor: 2.5, interval: 0, repetitions: 0, lapses: 0,
@@ -221,7 +263,7 @@ async function onLearnContinue() {
   };
 
   if (graduated) {
-    // Word mastered in learning phase → move to review queue
+    // Graduate! Move to review queue & count as learned
     await updateLearningState(word.localId, {
       ...baseState,
       status: 'review',
@@ -231,17 +273,20 @@ async function onLearnContinue() {
       learnStreak: streak,
       nextReviewDate: addDays(todayISO(), 1),
     });
-    // Log to review history for stats
     await logReview(word.localId, 4, 'learn', 0);
     await updateDailyStats('wordsLearned', 1);
+
+    // Remove from stored batch
+    const batchIds = await getStoredBatch();
+    const updated = batchIds.filter(id => id !== word.localId);
+    await saveStoredBatch(updated);
   } else if (wasCorrect) {
-    // Correct but not yet graduated
+    // Correct but not graduated — don't count as learned yet
     await updateLearningState(word.localId, {
       ...baseState,
       status: 'learning',
       learnStreak: streak,
     });
-    await updateDailyStats('wordsLearned', 1);
   } else {
     // Wrong → reset streak, keep in learning
     await updateLearningState(word.localId, {
@@ -249,7 +294,6 @@ async function onLearnContinue() {
       status: 'learning',
       learnStreak: 0,
     });
-    await updateDailyStats('wordsLearned', 1);
 
     // Re-insert this word later in the batch for more practice
     const currentIdx = learnSession.currentIndex;
@@ -283,13 +327,13 @@ function autoPlayLearnWord() {
 
 /* ---- Complete Screen ---- */
 async function renderLearnFlowComplete() {
-  const total = learnSession.correct.length + learnSession.wrong.length;
-  const known = learnSession.correct.length;
-  const graduated = Object.values(learnSession.correctCounts).filter(c => c >= 3).length;
+  const uniqueWords = [...new Set([...learnSession.correct, ...learnSession.wrong].map(w => w.localId))];
+  const graduated = uniqueWords.filter(id => (learnSession.correctCounts[id] || 0) >= 3).length;
+  const totalCorrect = learnSession.correct.length;
   const duration = Date.now() - learnSession.startTime;
   const bg = learnSession.gradient;
 
-  if (graduated >= learnSession.words.filter(w => (learnSession.correctCounts[w.localId] || 0) >= 3).length * 0.5) {
+  if (graduated >= uniqueWords.length * 0.5) {
     setTimeout(showConfetti, 300);
   }
 
@@ -297,20 +341,24 @@ async function renderLearnFlowComplete() {
   const streak = await getSetting('streak', 0);
   const reviewSummary = await getReviewQueueSummary();
 
+  // Check if stored batch is now empty
+  const batchIds = await getStoredBatch();
+  const allDone = batchIds.length === 0;
+
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="learn-bg" style="background: ${bg};"></div>
     <div class="learn-complete fade-in">
-      <div class="learn-complete-icon">${graduated > 0 ? '🎉' : '💪'}</div>
-      <div class="learn-complete-title">本组学习完成</div>
+      <div class="learn-complete-icon">${allDone ? '🎉' : '💪'}</div>
+      <div class="learn-complete-title">${allDone ? '本组全部掌握！' : '本轮学习完成'}</div>
       <div style="opacity:0.6;">🔥 ${streak} 天连续</div>
       <div class="learn-complete-stats">
         <div class="learn-complete-stat">
-          <div class="learn-complete-stat-val" style="color:#34C759;">${known}</div>
-          <div class="learn-complete-stat-label">正确</div>
+          <div class="learn-complete-stat-val" style="color:#34C759;">${totalCorrect}</div>
+          <div class="learn-complete-stat-label">正确次数</div>
         </div>
         <div class="learn-complete-stat">
-          <div class="learn-complete-stat-val" style="color:var(--color-primary);">${graduated}</div>
+          <div class="learn-complete-stat-val" style="color:var(--color-primary);">${graduated}/${uniqueWords.length}</div>
           <div class="learn-complete-stat-label">已掌握 ✓3</div>
         </div>
         <div class="learn-complete-stat">
@@ -318,12 +366,19 @@ async function renderLearnFlowComplete() {
           <div class="learn-complete-stat-label">用时</div>
         </div>
       </div>
-      <div class="learn-complete-card" style="text-align:center;">
-        <div style="opacity:0.7;">待复习 ${reviewSummary.due} 词</div>
-      </div>
+      ${!allDone ? `
+        <div class="learn-complete-card" style="text-align:center;">
+          <div style="opacity:0.7;">还有 ${uniqueWords.length - graduated} 个词需要继续练习</div>
+          <button class="learn-complete-btn primary" style="width:100%; margin-top:12px;" onclick="navigate('learn')">继续学习 →</button>
+        </div>
+      ` : `
+        <div class="learn-complete-card" style="text-align:center;">
+          <div style="opacity:0.7;">待复习 ${reviewSummary.due} 词</div>
+        </div>
+      `}
       <div class="learn-complete-actions">
         <button class="learn-complete-btn" onclick="navigate('home')">返回首页</button>
-        <button class="learn-complete-btn primary" onclick="navigate('review')">去复习</button>
+        ${!allDone ? `` : `<button class="learn-complete-btn primary" onclick="navigate('review')">去复习</button>`}
       </div>
     </div>
   `;
@@ -376,6 +431,9 @@ async function markWordKnown(wordId) {
     nextReviewDate: addDays(todayISO(), 30), lapses: 0,
     lessonId: word.lessonId
   });
+  // Remove from stored batch
+  const batchIds = await getStoredBatch();
+  await saveStoredBatch(batchIds.filter(bid => bid !== id));
   showToast('已标记为熟词');
 }
 

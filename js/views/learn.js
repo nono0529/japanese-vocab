@@ -1,11 +1,10 @@
 /* ============================
-   不背日语 — Learn Flow v4
-   不背单词 Style: 10词/组, 答对3次毕业, 自动发音, 结果页
+   不背日语 — Learn Flow v5
+   不背单词 Style: 10词/组, 答对3次毕业, 答错回炉
    ============================ */
 
 let learnSession = null;
 
-// Brighter, more varied gradients — 不背单词 wallpaper style
 const GRADS = [
   'linear-gradient(160deg, #0F2027 0%, #203A43 40%, #2C5364 100%)',
   'linear-gradient(160deg, #1A2980 0%, #26D0CE 100%)',
@@ -21,22 +20,34 @@ const GRADS = [
 
 async function renderLearnFlow() {
   const batchSize = 10;
-  const newWordIds = new Set(
-    (await db.learningState.where('status').equals('new').toArray()).map(s => s.wordId)
-  );
-  const allWords = await db.words.toArray();
-  const newWords = allWords.filter(w => newWordIds.has(w.localId));
 
-  if (newWords.length === 0) {
+  // Get words in learning phase: status = 'new' or 'learning', with learnStreak < 3
+  const allStates = await db.learningState.toArray();
+  const learningPoolIds = new Set(
+    allStates
+      .filter(s => (s.status === 'new' || s.status === 'learning') && (s.learnStreak || 0) < 3)
+      .map(s => s.wordId)
+  );
+
+  // Also include words that have NO learningState entry yet (fresh words)
+  const allWords = await db.words.toArray();
+  const existingIds = new Set(allStates.map(s => s.wordId));
+  const freshWordIds = allWords.filter(w => !existingIds.has(w.localId)).map(w => w.localId);
+
+  const poolIds = new Set([...learningPoolIds, ...freshWordIds]);
+  const poolWords = allWords.filter(w => poolIds.has(w.localId));
+
+  if (poolWords.length === 0) {
     return `<div class="empty-state" style="padding-top:80px;">
       <div class="empty-state-icon">🎉</div>
-      <div class="empty-state-title">没有新词了！</div>
-      <div class="empty-state-desc">所有单词都已学过，去复习吧</div>
+      <div class="empty-state-title">没有需要学习的词了！</div>
+      <div class="empty-state-desc">所有单词都已完成学习，去复习吧</div>
       <button class="btn btn-primary mt-md" onclick="navigate('review')">去复习</button>
     </div>`;
   }
 
-  const batch = shuffleArray(newWords).slice(0, batchSize);
+  // Prefer words with lower learnStreak, then random
+  const batch = shuffleArray(poolWords).slice(0, batchSize);
 
   learnSession = {
     words: batch,
@@ -44,7 +55,7 @@ async function renderLearnFlow() {
     phase: 'question',
     correct: [],
     wrong: [],
-    correctCounts: {},
+    correctCounts: {},   // wordId -> consecutive correct count THIS session
     startTime: Date.now(),
     gradient: GRADS[Math.floor(Math.random() * GRADS.length)],
     batchNum: 1,
@@ -60,6 +71,12 @@ function renderQuestionView(session) {
   const total = session.words.length;
   const options = generateLearnOptions(word);
 
+  // Show learnStreak indicator
+  const streak = session.correctCounts[word.localId] || 0;
+  const streakDots = streak > 0
+    ? `<div style="margin-top:4px; font-size:0.75rem; color:rgba(255,255,255,0.5);">${'●'.repeat(streak)}${'○'.repeat(3 - streak)}</div>`
+    : '';
+
   return `
     <div class="learn-bg" style="background: ${session.gradient};"></div>
     <div class="learn-container fade-in">
@@ -74,6 +91,7 @@ function renderQuestionView(session) {
       <div class="learn-word-display">
         <div class="learn-word-jp-lg">${escapeHTML(word.japanese)}</div>
         <div class="learn-word-rd">${escapeHTML(word.reading)}</div>
+        ${streakDots}
         <button class="learn-audio-btn" id="learnAudioBtn"
                 onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.reading).replace(/'/g, "\\'")}')">
           🔊 发音
@@ -93,12 +111,13 @@ function renderQuestionView(session) {
   `;
 }
 
-/* ---- Result View (after answering) ---- */
+/* ---- Result View ---- */
 function renderResultView(session) {
   const word = session.words[session.currentIndex];
   const wasCorrect = session.lastCorrect;
   const progress = session.currentIndex + 1;
   const total = session.words.length;
+  const streak = session.correctCounts[word.localId] || 0;
 
   return `
     <div class="learn-bg" style="background: ${session.gradient};"></div>
@@ -126,6 +145,10 @@ function renderResultView(session) {
           🔊 发音
         </button>
         <div class="learn-meaning-big">${escapeHTML(word.meaning)}</div>
+        <div style="margin-top:8px; font-size:0.85rem; color:rgba(255,255,255,0.5);">
+          已连续答对 <b style="color:${wasCorrect ? '#34C759' : '#FF3B30'};">${streak}/3</b> 次
+          ${streak >= 3 ? ' ✅ 已掌握' : ''}
+        </div>
       </div>
 
       <!-- Example sentences -->
@@ -139,9 +162,7 @@ function renderResultView(session) {
       ` : ''}
 
       <!-- Next button -->
-      <button class="learn-next-btn" onclick="onLearnContinue()">
-        ${session.currentIndex + 1 >= session.words.length ? '完成学习 →' : '下一词 →'}
-      </button>
+      <button class="learn-next-btn" onclick="onLearnContinue()">继续 →</button>
     </div>
   `;
 }
@@ -167,8 +188,8 @@ function onLearnAnswer(choice, btnEl) {
     }
   });
 
-  // Track
   learnSession.lastCorrect = isCorrect;
+
   if (isCorrect) {
     learnSession.correct.push(word);
     learnSession.correctCounts[word.localId] = (learnSession.correctCounts[word.localId] || 0) + 1;
@@ -179,35 +200,61 @@ function onLearnAnswer(choice, btnEl) {
 
   learnSession.phase = 'result';
 
-  // Transition to result view after brief delay
   setTimeout(() => {
     const app = document.getElementById('app');
     app.innerHTML = renderResultView(learnSession);
   }, 350);
 }
 
-/* ---- Continue to Next Word ---- */
+/* ---- Continue: advance or re-queue ---- */
 async function onLearnContinue() {
   const word = learnSession.words[learnSession.currentIndex];
-  const correctCount = learnSession.correctCounts[word.localId] || 0;
-  const graduated = correctCount >= 3;
+  const streak = learnSession.correctCounts[word.localId] || 0;
+  const wasCorrect = learnSession.lastCorrect;
+  const graduated = streak >= 3;
 
-  // Apply SM-2: quality 4 for correct, 1 for wrong
-  const quality = learnSession.lastCorrect ? 4 : 1;
-  await rateWord(word.localId, quality, 'learn', 0);
+  // Persist learnStreak to DB
+  const existingState = await getLearningState(word.localId);
+  const baseState = existingState || {
+    status: 'new', easeFactor: 2.5, interval: 0, repetitions: 0, lapses: 0,
+    lessonId: word.lessonId,
+  };
 
-  // If graduated (3 correct), set proper review interval (not today)
   if (graduated) {
-    const state = await getLearningState(word.localId);
-    if (state) {
-      await updateLearningState(word.localId, {
-        ...state,
-        status: 'learning',
-        interval: 1,
-        repetitions: 1,
-        nextReviewDate: addDays(todayISO(), 1),
-      });
-    }
+    // Word mastered in learning phase → move to review queue
+    await updateLearningState(word.localId, {
+      ...baseState,
+      status: 'review',
+      interval: 1,
+      repetitions: 1,
+      easeFactor: 2.5,
+      learnStreak: streak,
+      nextReviewDate: addDays(todayISO(), 1),
+    });
+    // Log to review history for stats
+    await logReview(word.localId, 4, 'learn', 0);
+    await updateDailyStats('wordsLearned', 1);
+  } else if (wasCorrect) {
+    // Correct but not yet graduated
+    await updateLearningState(word.localId, {
+      ...baseState,
+      status: 'learning',
+      learnStreak: streak,
+    });
+    await updateDailyStats('wordsLearned', 1);
+  } else {
+    // Wrong → reset streak, keep in learning
+    await updateLearningState(word.localId, {
+      ...baseState,
+      status: 'learning',
+      learnStreak: 0,
+    });
+    await updateDailyStats('wordsLearned', 1);
+
+    // Re-insert this word later in the batch for more practice
+    const currentIdx = learnSession.currentIndex;
+    const reinsertPos = Math.min(currentIdx + 3, learnSession.words.length);
+    learnSession.words.splice(reinsertPos, 0, word);
   }
 
   learnSession.currentIndex++;
@@ -221,31 +268,31 @@ async function onLearnContinue() {
     }
     const app = document.getElementById('app');
     app.innerHTML = renderQuestionView(learnSession);
-    // Auto-play TTS for the next word
     autoPlayLearnWord();
   }
 }
 
-/* ---- Auto-play TTS for current word ---- */
+/* ---- Auto-play TTS ---- */
 function autoPlayLearnWord() {
   if (!learnSession || learnSession.phase !== 'question') return;
   const word = learnSession.words[learnSession.currentIndex];
   if (word && word.reading) {
-    setTimeout(() => {
-      TTS.speakWord(word.reading);
-    }, 350);
+    setTimeout(() => { TTS.speakWord(word.reading); }, 350);
   }
 }
 
 /* ---- Complete Screen ---- */
 async function renderLearnFlowComplete() {
-  const total = learnSession.words.length;
+  const total = learnSession.correct.length + learnSession.wrong.length;
   const known = learnSession.correct.length;
-  const unknown = learnSession.wrong.length;
+  const graduated = Object.values(learnSession.correctCounts).filter(c => c >= 3).length;
   const duration = Date.now() - learnSession.startTime;
   const bg = learnSession.gradient;
 
-  if (known >= total * 0.7) setTimeout(showConfetti, 300);
+  if (graduated >= learnSession.words.filter(w => (learnSession.correctCounts[w.localId] || 0) >= 3).length * 0.5) {
+    setTimeout(showConfetti, 300);
+  }
+
   await updateStreak();
   const streak = await getSetting('streak', 0);
   const reviewSummary = await getReviewQueueSummary();
@@ -254,7 +301,7 @@ async function renderLearnFlowComplete() {
   app.innerHTML = `
     <div class="learn-bg" style="background: ${bg};"></div>
     <div class="learn-complete fade-in">
-      <div class="learn-complete-icon">${known >= total * 0.7 ? '🎉' : '💪'}</div>
+      <div class="learn-complete-icon">${graduated > 0 ? '🎉' : '💪'}</div>
       <div class="learn-complete-title">本组学习完成</div>
       <div style="opacity:0.6;">🔥 ${streak} 天连续</div>
       <div class="learn-complete-stats">
@@ -263,8 +310,8 @@ async function renderLearnFlowComplete() {
           <div class="learn-complete-stat-label">正确</div>
         </div>
         <div class="learn-complete-stat">
-          <div class="learn-complete-stat-val" style="color:#FF3B30;">${unknown}</div>
-          <div class="learn-complete-stat-label">需加强</div>
+          <div class="learn-complete-stat-val" style="color:var(--color-primary);">${graduated}</div>
+          <div class="learn-complete-stat-label">已掌握 ✓3</div>
         </div>
         <div class="learn-complete-stat">
           <div class="learn-complete-stat-val" style="font-size:1.5rem;">${formatMinutes(duration)}</div>
@@ -294,7 +341,6 @@ function generateLearnOptions(word) {
 }
 
 function showLearnMenu(wordId) {
-  // Remove any existing menu
   const existing = document.querySelector('.learn-popup-menu');
   if (existing) existing.remove();
 
@@ -308,7 +354,6 @@ function showLearnMenu(wordId) {
   document.body.appendChild(menu);
   setTimeout(() => menu.classList.add('show'), 10);
 
-  // Close on outside click
   const closeHandler = (e) => {
     if (!menu.contains(e.target)) {
       menu.remove();
@@ -322,9 +367,12 @@ async function markWordKnown(wordId) {
   const id = parseInt(wordId);
   const word = await db.words.get(id);
   if (!word) return;
+  const existing = await getLearningState(id);
   await updateLearningState(id, {
+    ...(existing || {}),
     status: 'mastered',
     interval: 30, repetitions: 5, easeFactor: 2.5,
+    learnStreak: 3,
     nextReviewDate: addDays(todayISO(), 30), lapses: 0,
     lessonId: word.lessonId
   });
@@ -341,7 +389,6 @@ async function addToWordbook(wordId) {
   } else {
     showToast('已在生词本中');
   }
-  // Close menu
   const menu = document.querySelector('.learn-popup-menu');
   if (menu) menu.remove();
 }
@@ -352,6 +399,5 @@ async function getWordbookItems() {
 }
 
 function setupLearnFlowListeners() {
-  // Auto-play TTS when first card loads
   autoPlayLearnWord();
 }

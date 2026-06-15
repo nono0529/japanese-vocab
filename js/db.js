@@ -117,7 +117,8 @@ async function getWordsDueForReview(limit = 20) {
   return db.learningState
     .where('nextReviewDate')
     .belowOrEqual(today)
-    .filter(s => s.status === 'learning' || s.status === 'review')
+    .filter(s => s.status === 'review' || s.status === 'mastered' ||
+                 (s.status === 'learning' && (s.learnStreak || 0) >= 3))
     .sortBy('nextReviewDate')
     .then(results => results.slice(0, limit));
 }
@@ -127,13 +128,15 @@ async function getReviewQueueSummary() {
   const allDue = await db.learningState
     .where('nextReviewDate')
     .belowOrEqual(today)
-    .filter(s => s.status === 'learning' || s.status === 'review')
+    .filter(s => s.status === 'review' || s.status === 'mastered' ||
+                 (s.status === 'learning' && (s.learnStreak || 0) >= 3))
     .count();
 
   const overdue = await db.learningState
     .where('nextReviewDate')
     .below(today)
-    .filter(s => s.status === 'learning' || s.status === 'review')
+    .filter(s => s.status === 'review' || s.status === 'mastered' ||
+                 (s.status === 'learning' && (s.learnStreak || 0) >= 3))
     .count();
 
   const newCount = await db.learningState

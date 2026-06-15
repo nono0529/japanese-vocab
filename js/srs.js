@@ -20,7 +20,8 @@ function calculateNextReview(currentState, quality) {
     easeFactor = 2.5,
     interval = 0,
     repetitions = 0,
-    lapses = 0
+    lapses = 0,
+    learnStreak = 0
   } = currentState;
 
   let newInterval, newRepetitions, newLapses = lapses;
@@ -69,6 +70,7 @@ function calculateNextReview(currentState, quality) {
     nextReviewDate,
     status,
     lapses: newLapses,
+    learnStreak,
     isLeech
   };
 }

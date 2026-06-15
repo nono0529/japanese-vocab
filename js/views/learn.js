@@ -6,12 +6,14 @@
 let learnSession = null;
 
 const LEARN_GRADS = [
-  'linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
-  'linear-gradient(160deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%)',
-  'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
-  'linear-gradient(160deg, #1B1B2F 0%, #2C2C54 50%, #3D3D6B 100%)',
-  'linear-gradient(160deg, #0C0C1D 0%, #1A1A3E 50%, #16213E 100%)',
-  'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
+  'linear-gradient(160deg, #0b1a2a 0%, #142d42 40%, #1e4d5c 100%)',
+  'linear-gradient(160deg, #1a1a30 0%, #1e2a4a 40%, #2d4a6e 100%)',
+  'linear-gradient(160deg, #0f1729 0%, #1a2740 40%, #283b5c 100%)',
+  'linear-gradient(160deg, #121a2a 0%, #1c2d48 40%, #2a4060 100%)',
+  'linear-gradient(160deg, #0d1525 0%, #1a2840 40%, #243d58 100%)',
+  'linear-gradient(160deg, #141e30 0%, #1f3248 40%, #2e4a64 100%)',
+  'linear-gradient(160deg, #0a1622 0%, #152838 40%, #1d3e50 100%)',
+  'linear-gradient(160deg, #111d2e 0%, #1c2e46 40%, #29405c 100%)',
 ];
 
 async function renderLearnFlow() {

@@ -1,385 +1,284 @@
 /* ============================
-   Learn/Home/Dictation — 不背单词 Style
+   Learn/Home/Review/Dictation — 不背单词 Style v2
    ============================ */
 
-/* Full-screen gradient background */
+/* ---- Full-screen gradient background ---- */
 .learn-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  transition: background 1.2s ease;
+  position: fixed; inset: 0; z-index: 0;
+  transition: background 1.5s ease;
 }
 
 /* ---- Home Screen ---- */
-
 .home-container {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
   min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+  min-height: calc(100dvh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
   padding: 0 var(--space-lg);
-  touch-action: pan-y;
-  overscroll-behavior-x: none;
+  touch-action: pan-y; overscroll-behavior-x: none;
 }
 
 .home-card {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: var(--radius-xl);
-  padding: 28px 24px;
-  margin-bottom: 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px;
+  padding: 32px 24px; margin-bottom: 16px;
+  text-align: center; cursor: pointer;
+  transition: all 0.25s ease;
   animation: slideUpFade 0.5s ease forwards;
   -webkit-tap-highlight-color: transparent;
 }
-
 .home-card:active {
-  transform: scale(0.97);
-  background: rgba(255,255,255,0.14);
+  transform: scale(0.96);
+  background: rgba(255,255,255,0.12);
 }
-
-.home-card-icon {
-  font-size: 2.5rem;
-  margin-bottom: 8px;
-}
-
+.home-card-icon { font-size: 2.8rem; margin-bottom: 8px; }
 .home-card-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: rgba(255,255,255,0.95);
-  letter-spacing: 0.02em;
+  font-size: 1.35rem; font-weight: 700;
+  color: rgba(255,255,255,0.95); letter-spacing: 0.03em;
 }
-
 .home-card-count {
-  font-size: 1rem;
-  color: rgba(255,255,255,0.6);
-  margin-top: 6px;
-}
-
-.home-card-sub {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.35);
-  margin-top: 4px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-/* ---- Learn Container ---- */
-
-.learn-container {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
-  padding: 0 var(--space-md);
-  touch-action: pan-y;
-  overscroll-behavior-x: none;
-}
-
-/* ---- Progress ---- */
-
-.learn-progress {
-  padding: var(--space-md) 0 var(--space-sm);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.learn-progress-bar-wrap {
-  flex: 1;
-  height: 3px;
-  background: rgba(255,255,255,0.2);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.learn-progress-bar-fill {
-  height: 100%;
-  background: rgba(255,255,255,0.9);
-  border-radius: var(--radius-full);
-  transition: width 0.4s ease;
-}
-
-.learn-progress-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.85);
-  min-width: 48px;
-  text-align: right;
+  font-size: 1rem; color: rgba(255,255,255,0.55); margin-top: 6px;
   font-variant-numeric: tabular-nums;
 }
+.home-card-sub {
+  font-size: 0.75rem; color: rgba(255,255,255,0.3);
+  margin-top: 6px; letter-spacing: 0.08em; text-transform: uppercase;
+}
 
-/* ---- Word Display ---- */
+/* ---- Shared Learn/Review/Dictation Container ---- */
+.learn-container {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+  min-height: calc(100dvh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+  padding: 0 var(--space-lg);
+  touch-action: pan-y; overscroll-behavior-x: none;
+}
 
+/* ---- Progress Bar (top) ---- */
+.learn-progress {
+  padding: 16px 0 8px;
+  display: flex; align-items: center; gap: 10px;
+}
+.learn-progress-bar-wrap {
+  flex: 1; height: 2px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 1px; overflow: hidden;
+}
+.learn-progress-bar-fill {
+  height: 100%; background: rgba(255,255,255,0.75);
+  border-radius: 1px; transition: width 0.5s ease;
+}
+.learn-progress-text {
+  font-size: 0.8rem; font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  min-width: 44px; text-align: right;
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+}
+
+/* ---- Word Display (center) ---- */
 .learn-word-display {
-  text-align: center;
-  padding: 20px 0;
+  text-align: center; padding: 28px 0 16px;
 }
-
 .learn-word-jp-lg {
-  font-size: 2.4rem;
-  font-weight: 700;
-  font-family: var(--font-jp);
-  color: rgba(255,255,255,0.95);
-  letter-spacing: 0.03em;
-  line-height: 1.3;
+  font-size: 2.8rem; font-weight: 700;
+  font-family: var(--font-jp); color: rgba(255,255,255,0.95);
+  letter-spacing: 0.04em; line-height: 1.25;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
-
 .learn-word-rd {
-  font-size: 1rem;
-  font-family: var(--font-jp);
-  color: rgba(255,255,255,0.55);
-  margin-top: 6px;
+  font-size: 1rem; font-family: var(--font-jp);
+  color: rgba(255,255,255,0.5); margin-top: 6px;
+  letter-spacing: 0.03em;
 }
-
 .learn-audio-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  border-radius: var(--radius-full);
-  border: 1.5px solid rgba(255,255,255,0.2);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.8);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: var(--font-mixed);
+  color: rgba(255,255,255,0.75); font-size: 0.88rem;
+  cursor: pointer; font-family: var(--font-mixed);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
-
 .learn-audio-btn:active {
-  background: rgba(255,255,255,0.2);
-  transform: scale(0.94);
+  background: rgba(255,255,255,0.2); transform: scale(0.94);
 }
 
-/* ---- Meaning Options ---- */
-
+/* ---- Meaning Options (4 choice buttons) ---- */
 .learn-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 0;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 8px 0 4px;
 }
-
 .learn-option-btn {
-  display: block;
-  width: 100%;
+  display: block; width: 100%;
   padding: 16px 20px;
-  border: 2px solid rgba(255,255,255,0.15);
-  border-radius: var(--radius-lg);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.9);
-  font-size: 1rem;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.85);
+  font-size: 1.02rem; font-weight: 500;
   font-family: var(--font-mixed);
-  cursor: pointer;
-  text-align: left;
-  transition: all var(--transition-fast);
+  cursor: pointer; text-align: left;
+  transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
-  animation: fadeInUp 0.3s ease forwards;
+  animation: fadeInUp 0.35s ease forwards;
   opacity: 0;
-  letter-spacing: 0.01em;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  letter-spacing: 0.02em;
 }
-
 .learn-option-btn:active {
   background: rgba(255,255,255,0.15);
   transform: scale(0.98);
 }
 
-/* ---- Detail Panel (after choice) ---- */
-
+/* ---- Detail Panel (slides up after answering) ---- */
 .learn-detail {
   text-align: center;
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.45s ease, opacity 0.35s ease, margin 0.35s ease;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.4s ease,
+              margin 0.4s ease;
   margin-top: 0;
 }
-
 .learn-detail.show {
-  max-height: 500px;
-  opacity: 1;
-  margin-top: 16px;
+  max-height: 500px; opacity: 1; margin-top: 20px;
 }
-
 .learn-detail-correct {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 4px;
+  font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;
+  letter-spacing: 0.02em;
 }
 
+/* Meaning display after reveal */
 .learn-meaning-text {
-  color: rgba(255,255,255,0.95);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.95); font-weight: 700;
+  font-size: 1.4rem !important; letter-spacing: 0.03em;
 }
 
+/* ---- Example Sentence Card (不背单词 style) ---- */
 .learn-example-box {
-  margin-top: 12px;
-  padding: 14px;
-  background: rgba(255,255,255,0.08);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255,255,255,0.06);
+  margin-top: 14px; padding: 16px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 14px;
   text-align: left;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.06);
 }
-
 .learn-example-jp {
-  font-size: 0.9rem;
-  font-family: var(--font-jp);
-  color: rgba(255,255,255,0.85);
-  line-height: 1.6;
+  font-size: 0.92rem; font-family: var(--font-jp);
+  color: rgba(255,255,255,0.9); line-height: 1.7;
+  font-weight: 500; letter-spacing: 0.02em;
 }
-
 .learn-example-reading {
-  font-size: 0.8rem;
-  font-family: var(--font-jp);
-  color: rgba(255,255,255,0.5);
-  margin-top: 4px;
+  font-size: 0.8rem; font-family: var(--font-jp);
+  color: rgba(255,255,255,0.45); margin-top: 6px;
 }
-
 .learn-example-cn {
-  font-size: 0.85rem;
-  color: rgba(255,255,255,0.6);
-  margin-top: 4px;
+  font-size: 0.85rem; color: rgba(255,255,255,0.55);
+  margin-top: 6px; letter-spacing: 0.01em;
 }
 
-/* ---- Action Buttons ---- */
-
+/* ---- Next Word Button ---- */
 .learn-btn {
-  padding: 16px;
-  border: none;
-  border-radius: var(--radius-xl);
-  font-size: 1rem;
-  font-weight: 600;
-  font-family: var(--font-mixed);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  -webkit-tap-highlight-color: transparent;
-  letter-spacing: 0.02em;
+  padding: 16px; border: none; border-radius: 16px;
+  font-size: 1rem; font-weight: 600;
+  font-family: var(--font-mixed); cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent; letter-spacing: 0.03em;
 }
-
 .learn-btn:active { transform: scale(0.95); }
-
 .learn-btn-known {
-  background: rgba(255,255,255,0.9);
-  color: #1A1A2E;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.92); color: #0F2027;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
 }
+.learn-btn-known:active { background: rgba(255,255,255,0.75); }
 
-.learn-btn-known:active {
-  background: rgba(255,255,255,0.75);
+/* ---- Review & Dictation Action Buttons ---- */
+.learn-actions {
+  display: flex; gap: 12px; padding: 20px 0;
+  opacity: 0; transform: translateY(16px);
+  transition: all 0.45s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+.learn-actions.show {
+  opacity: 1; transform: translateY(0); pointer-events: auto;
 }
 
 /* ---- Dictation Input ---- */
-
-.dict-input-area {
-  padding: 16px 0;
-}
-
+.dict-input-area { padding: 20px 0; }
 .dict-input {
-  width: 100%;
-  padding: 16px 20px;
-  border: 2px solid rgba(255,255,255,0.2);
-  border-radius: var(--radius-lg);
-  background: rgba(255,255,255,0.08);
+  width: 100%; padding: 18px 20px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.06);
   color: rgba(255,255,255,0.95);
-  font-size: 1.2rem;
-  font-family: var(--font-jp);
-  text-align: center;
-  outline: none;
-  transition: border-color var(--transition-fast);
-  letter-spacing: 0.03em;
+  font-size: 1.3rem; font-family: var(--font-jp);
+  text-align: center; outline: none;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  transition: border-color 0.25s ease;
 }
-
-.dict-input:focus {
-  border-color: rgba(255,255,255,0.5);
-}
-
-.dict-input::placeholder {
-  color: rgba(255,255,255,0.3);
-  font-family: var(--font-mixed);
-}
+.dict-input:focus { border-color: rgba(255,255,255,0.45); }
+.dict-input::placeholder { color: rgba(255,255,255,0.25); font-family: var(--font-mixed); }
+.dict-input:disabled { opacity: 0.5; }
 
 /* ---- Complete Screen ---- */
-
 .learn-complete {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
   min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
   padding: var(--space-xl) var(--space-md);
   color: rgba(255,255,255,0.95);
 }
-
-.learn-complete-icon { font-size: 4rem; margin-bottom: var(--space-md); }
-
-.learn-complete-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: var(--space-sm);
-  letter-spacing: 0.02em;
-}
-
-.learn-complete-stats {
-  display: flex;
-  gap: var(--space-xl);
-  margin: var(--space-lg) 0;
-}
-
+.learn-complete-icon { font-size: 4rem; margin-bottom: 16px; }
+.learn-complete-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.03em; }
+.learn-complete-stats { display: flex; gap: 36px; margin: 24px 0; }
 .learn-complete-stat { text-align: center; }
-
 .learn-complete-stat-val { font-size: 2rem; font-weight: 700; }
-
-.learn-complete-stat-label {
-  font-size: 0.85rem;
-  opacity: 0.7;
-  margin-top: 4px;
-}
-
+.learn-complete-stat-label { font-size: 0.85rem; opacity: 0.65; margin-top: 4px; }
 .learn-complete-card {
-  background: rgba(255,255,255,0.08);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md) var(--space-lg);
-  margin-top: var(--space-md);
-  backdrop-filter: blur(4px);
+  background: rgba(255,255,255,0.06);
+  border-radius: 16px; padding: 16px 24px; margin-top: 12px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.08);
 }
-
-.learn-complete-actions {
-  display: flex;
-  gap: var(--space-md);
-  margin-top: var(--space-xl);
-}
-
+.learn-complete-actions { display: flex; gap: 14px; margin-top: 28px; }
 .learn-complete-btn {
-  padding: 12px 28px;
-  border-radius: var(--radius-full);
+  padding: 12px 28px; border-radius: 24px;
   border: 1.5px solid rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.9);
-  font-size: 0.95rem;
-  font-weight: 500;
-  font-family: var(--font-mixed);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  letter-spacing: 0.01em;
+  color: rgba(255,255,255,0.85); font-size: 0.95rem;
+  font-weight: 500; font-family: var(--font-mixed); cursor: pointer;
+  transition: all 0.2s ease;
+}
+.learn-complete-btn:active { background: rgba(255,255,255,0.18); }
+.learn-complete-btn.primary {
+  background: rgba(255,255,255,0.92); color: #0F2027;
+  border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
-.learn-complete-btn:active { background: rgba(255,255,255,0.2); }
-
-.learn-complete-btn.primary {
-  background: rgba(255,255,255,0.9);
-  color: #1A1A2E;
-  border: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+/* ---- Additional review-specific styles ---- */
+.learn-word-pos { margin-top: 10px; }
+.learn-word-pos-badge {
+  display: inline-block; padding: 4px 14px;
+  border-radius: 12px; font-size: 0.8rem; font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  letter-spacing: 0.02em;
+}
+.learn-word-hint {
+  margin-top: 24px; font-size: 0.85rem;
+  color: rgba(255,255,255,0.35); letter-spacing: 0.04em;
+  transition: opacity 0.35s ease;
+}
+.learn-word-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 16px 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
 }

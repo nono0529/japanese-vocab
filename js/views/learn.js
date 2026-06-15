@@ -69,7 +69,7 @@ function renderLearnCard(session) {
         <div class="learn-word-jp-lg">${escapeHTML(word.japanese)}</div>
         <div class="learn-word-rd">${escapeHTML(word.reading)}</div>
         <button class="learn-audio-btn" style="margin-top:12px;"
-                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
+                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.reading).replace(/'/g, "\\'")}')">
           🔊 发音
         </button>
       </div>

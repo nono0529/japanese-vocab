@@ -99,7 +99,7 @@ function renderDictationCard(session) {
 function playDictationAudio() {
   if (!dictationSession) return;
   const word = dictationSession.words[dictationSession.currentIndex];
-  TTS.speakWord(word.japanese);
+  TTS.speakWord(word.reading || word.japanese);
   const btn = document.getElementById('dictAudioBtn');
   if (btn) {
     btn.style.transform = 'scale(1.2)';

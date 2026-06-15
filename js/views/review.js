@@ -109,7 +109,7 @@ function renderReviewCard(session) {
       <!-- Audio button -->
       <div style="display:flex; justify-content:center;">
         <button class="learn-audio-btn" id="reviewAudioBtn"
-                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
+                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.reading).replace(/'/g, "\\'")}')">
           🔊
         </button>
       </div>

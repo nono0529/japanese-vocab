@@ -15,7 +15,7 @@ const REVIEW_GRADIENTS = [
   'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
 ];
 
-async function renderReview() {
+async function renderReviewFlow() {
   const batchSize = parseInt(await getSetting('reviewBatchSize', '20'));
   const dueWordsState = await getWordsDueForReview(batchSize);
 

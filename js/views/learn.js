@@ -1,59 +1,47 @@
 /* ============================
-   不背日语 — New Word Learning View
-   不背单词 Style: Tap to reveal, beautiful gradients
+   不背日语 — Learn Flow (不背单词 Style)
+   See word → pick meaning → see details → next
    ============================ */
 
 let learnSession = null;
-let learnRevealed = false;
 
-// Beautiful dark gradient wallpapers (不背单词 style)
-const LEARN_GRADIENTS = [
+const LEARN_GRADS = [
   'linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
   'linear-gradient(160deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%)',
   'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
-  'linear-gradient(160deg, #0B0F19 0%, #1A2333 50%, #2D4059 100%)',
   'linear-gradient(160deg, #1B1B2F 0%, #2C2C54 50%, #3D3D6B 100%)',
-  'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
   'linear-gradient(160deg, #0C0C1D 0%, #1A1A3E 50%, #16213E 100%)',
-  'linear-gradient(160deg, #232526 0%, #3A3D40 100%)',
+  'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
 ];
 
-function pickGradient() {
-  return LEARN_GRADIENTS[Math.floor(Math.random() * LEARN_GRADIENTS.length)];
-}
-
-async function renderLearn(lessonId) {
+async function renderLearnFlow() {
   const dailyGoal = parseInt(await getSetting('dailyNewWordGoal', '10'));
-  const words = await getWordsToLearn(lessonId, dailyGoal);
+  const newWordIds = new Set(
+    (await db.learningState.where('status').equals('new').toArray()).map(s => s.wordId)
+  );
+  const allWords = await db.words.toArray();
+  const newWords = allWords.filter(w => newWordIds.has(w.localId));
 
-  const lessonTitles = {};
-  for (let i = 1; i <= 24; i++) {
-    lessonTitles[i] = `第${i}課`;
+  if (newWords.length === 0) {
+    return `<div class="empty-state">
+      <div class="empty-state-icon">🎉</div>
+      <div class="empty-state-title">没有新词了！</div>
+      <div class="empty-state-desc">所有单词都已学过，去复习吧</div>
+      <button class="btn btn-primary mt-md" onclick="navigate('home')">返回首页</button>
+    </div>`;
   }
 
-  if (words.length === 0) {
-    return `
-      <div class="empty-state">
-        <div class="empty-state-icon">🎉</div>
-        <div class="empty-state-title">本课已全部学完！</div>
-        <div class="empty-state-desc">去复习已学单词，或学习其他课程吧</div>
-        <button class="btn btn-primary mt-md" onclick="navigate('lessons')">返回课程</button>
-      </div>
-    `;
-  }
+  const shuffled = shuffleArray(newWords).slice(0, dailyGoal);
 
   learnSession = {
-    lessonId,
-    words,
+    words: shuffled,
     currentIndex: 0,
+    answered: false,
     known: [],
     unknown: [],
-    batchStartTime: Date.now(),
-    lessonTitle: lessonTitles[lessonId] || `第${lessonId}課`,
-    gradient: pickGradient(),
+    startTime: Date.now(),
+    gradient: LEARN_GRADS[Math.floor(Math.random() * LEARN_GRADS.length)],
   };
-
-  learnRevealed = false;
 
   return renderLearnCard(learnSession);
 }
@@ -63,34 +51,40 @@ function renderLearnCard(session) {
   const progress = session.currentIndex + 1;
   const total = session.words.length;
   const bg = session.gradient;
+  const options = generateLearnOptions(word);
 
   return `
     <div class="learn-bg" style="background: ${bg};"></div>
     <div class="learn-container fade-in">
-      <!-- Progress -->
       <div class="learn-progress">
         <div class="learn-progress-bar-wrap">
-          <div class="learn-progress-bar-fill" style="width:${(progress / total) * 100}%"></div>
+          <div class="learn-progress-bar-fill" style="width:${(progress/total)*100}%"></div>
         </div>
         <span class="learn-progress-text">${progress}/${total}</span>
       </div>
 
-      <!-- Word Area (tap to reveal) -->
-      <div class="learn-word-area" id="learnWordArea" onclick="revealLearnMeaning()">
-        <div class="learn-word-japanese">${escapeHTML(word.japanese)}</div>
-        <div class="learn-word-reading">${escapeHTML(word.reading)}</div>
-        ${word.partOfSpeech ? `
-          <div class="learn-word-pos">
-            <span class="learn-word-pos-badge">${escapeHTML(word.partOfSpeech)}</span>
-          </div>
-        ` : ''}
-        <div class="learn-word-hint" id="learnHint">轻触屏幕 显示释义</div>
+      <div class="learn-word-display">
+        <div class="learn-word-jp-lg">${escapeHTML(word.japanese)}</div>
+        <div class="learn-word-rd">${escapeHTML(word.reading)}</div>
+        <button class="learn-audio-btn" style="margin-top:12px;"
+                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
+          🔊 发音
+        </button>
       </div>
 
-      <!-- Reveal Area (hidden until tap) -->
-      <div class="learn-reveal-area" id="learnRevealArea">
-        <div class="learn-meaning-divider"></div>
-        <div class="learn-meaning-text">${escapeHTML(word.meaning)}</div>
+      <div class="learn-options" id="learnOptions">
+        ${options.map((opt, i) => `
+          <button class="learn-option-btn" data-meaning="${escapeHTML(opt)}"
+                  onclick="onLearnChoice('${escapeHTML(opt).replace(/'/g, "\\'")}', this)"
+                  style="animation-delay:${i*0.05}s">
+            ${escapeHTML(opt)}
+          </button>
+        `).join('')}
+      </div>
+
+      <div class="learn-detail" id="learnDetail">
+        <div class="learn-detail-correct" id="learnDetailCorrect"></div>
+        <div class="learn-meaning-text" style="font-size:1.3rem; margin:12px 0;">${escapeHTML(word.meaning)}</div>
         ${word.exampleSentence ? `
           <div class="learn-example-box">
             <div class="learn-example-jp">${escapeHTML(word.exampleSentence)}</div>
@@ -98,168 +92,127 @@ function renderLearnCard(session) {
             ${word.exampleMeaning ? `<div class="learn-example-cn">${escapeHTML(word.exampleMeaning)}</div>` : ''}
           </div>
         ` : ''}
-      </div>
-
-      <!-- Audio button -->
-      <div style="display:flex; justify-content:center;">
-        <button class="learn-audio-btn" id="learnAudioBtn"
-                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
-          🔊
-        </button>
-      </div>
-
-      <!-- Action Buttons (visible after reveal) -->
-      <div class="learn-actions" id="learnActions">
-        <button class="learn-btn learn-btn-unknown" onclick="onLearnUnknown()">
-          不认识
-        </button>
-        <button class="learn-btn learn-btn-known" onclick="onLearnKnown()">
-          认识了
+        <button class="learn-btn learn-btn-known" style="width:100%; margin-top:16px;"
+                onclick="onLearnNextWord()">
+          下一词 →
         </button>
       </div>
     </div>
   `;
 }
 
-function revealLearnMeaning() {
-  if (learnRevealed) return;
-  learnRevealed = true;
-
-  const revealArea = document.getElementById('learnRevealArea');
-  const actions = document.getElementById('learnActions');
-  const hint = document.getElementById('learnHint');
-
-  if (revealArea) revealArea.classList.add('show');
-  if (actions) actions.classList.add('show');
-  if (hint) hint.style.opacity = '0';
+function generateLearnOptions(word) {
+  const allMeanings = learnSession.words
+    .filter(w => w.localId !== word.localId && w.meaning !== word.meaning)
+    .map(w => w.meaning);
+  const unique = [...new Set(allMeanings)];
+  const distractors = shuffleArray(unique).slice(0, 3);
+  while (distractors.length < 3) distractors.push('（不确定）');
+  return shuffleArray([word.meaning, ...distractors]);
 }
 
-function setupLearnCardListeners() {
-  learnRevealed = false;
-
-  // Prevent horizontal swipe from triggering browser navigation
-  const container = document.querySelector('.learn-container');
-  if (container) {
-    container.addEventListener('touchmove', function(e) {
-      // Block horizontal swipe
-      const touch = e.touches[0];
-      if (!touch) return;
-      // We allow vertical scroll, but block horizontal
-      // This is handled by touch-action: pan-y in CSS
-    }, { passive: true });
-  }
-
-  // TTS auto-play on card load (if setting enabled)
-  (async () => {
-    const autoPlay = await getSetting('autoPlayAudio', false);
-    if (autoPlay && learnSession) {
-      const word = learnSession.words[learnSession.currentIndex];
-      setTimeout(() => TTS.speakWord(word.japanese), 400);
-    }
-  })();
-}
-
-async function onLearnKnown() {
-  if (!learnSession || !learnRevealed) return;
+function onLearnChoice(choice, btnEl) {
+  if (learnSession.answered) return;
+  learnSession.answered = true;
 
   const word = learnSession.words[learnSession.currentIndex];
+  const isCorrect = choice === word.meaning;
 
-  await rateWord(word.localId, 3, 'learn', 0);
-  await updateLearningState(word.localId, {
-    status: 'learning',
-    interval: 0,
-    repetitions: 0,
-    easeFactor: 2.5,
-    nextReviewDate: todayISO(),
-    lapses: 0,
-    lessonId: learnSession.lessonId
+  const allBtns = document.querySelectorAll('.learn-option-btn');
+  allBtns.forEach(b => {
+    b.style.pointerEvents = 'none';
+    if (b.dataset.meaning === word.meaning) {
+      b.style.borderColor = '#34C759';
+      b.style.background = 'rgba(52,199,89,0.2)';
+      b.style.color = '#34C759';
+    } else if (b === btnEl && !isCorrect) {
+      b.style.borderColor = '#FF3B30';
+      b.style.background = 'rgba(255,59,48,0.2)';
+      b.style.color = '#FF3B30';
+    }
   });
 
-  learnSession.known.push(word);
-  await advanceLearnCard();
+  const detail = document.getElementById('learnDetail');
+  const correct = document.getElementById('learnDetailCorrect');
+  if (detail) {
+    detail.classList.add('show');
+    if (correct) {
+      correct.textContent = isCorrect ? '✓ 回答正确' : '✗ 回答错误';
+      correct.style.color = isCorrect ? '#34C759' : '#FF3B30';
+    }
+  }
+
+  if (isCorrect) learnSession.known.push(word);
+  else learnSession.unknown.push(word);
 }
 
-async function onLearnUnknown() {
-  if (!learnSession || !learnRevealed) return;
-
+async function onLearnNextWord() {
   const word = learnSession.words[learnSession.currentIndex];
+  const quality = learnSession.known.includes(word) ? 4 : 1;
 
-  await rateWord(word.localId, 1, 'learn', 0);
+  await rateWord(word.localId, quality, 'learn', 0);
+  await updateLearningState(word.localId, {
+    status: 'learning', interval: 0, repetitions: 0,
+    easeFactor: 2.5, nextReviewDate: todayISO(),
+    lapses: quality < 3 ? 1 : 0, lessonId: word.lessonId
+  });
 
-  learnSession.unknown.push(word);
-  await advanceLearnCard();
-}
-
-async function advanceLearnCard() {
   learnSession.currentIndex++;
+  learnSession.answered = false;
 
   if (learnSession.currentIndex >= learnSession.words.length) {
-    await renderLearnComplete();
+    await renderLearnFlowComplete();
   } else {
-    learnRevealed = false;
-    // Update gradient periodically
     if (learnSession.currentIndex % 5 === 0) {
-      learnSession.gradient = pickGradient();
+      learnSession.gradient = LEARN_GRADS[Math.floor(Math.random() * LEARN_GRADS.length)];
     }
     const app = document.getElementById('app');
     app.innerHTML = renderLearnCard(learnSession);
-    setupLearnCardListeners();
   }
 }
 
-async function renderLearnComplete() {
+async function renderLearnFlowComplete() {
   const total = learnSession.words.length;
   const known = learnSession.known.length;
   const unknown = learnSession.unknown.length;
-  const duration = Date.now() - learnSession.batchStartTime;
+  const duration = Date.now() - learnSession.startTime;
   const bg = learnSession.gradient;
 
-  const progress = await getLessonProgress(learnSession.lessonId);
-
-  if (known >= total * 0.7) {
-    setTimeout(showConfetti, 300);
-  }
+  if (known >= total * 0.7) setTimeout(showConfetti, 300);
+  await updateStreak();
+  const streak = await getSetting('streak', 0);
+  const reviewSummary = await getReviewQueueSummary();
 
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="learn-bg" style="background: ${bg};"></div>
     <div class="learn-complete fade-in">
-      <div class="learn-complete-icon">${known >= total * 0.7 ? '🎉' : '📚'}</div>
+      <div class="learn-complete-icon">${known >= total * 0.7 ? '🎉' : '💪'}</div>
       <div class="learn-complete-title">本组学习完成</div>
-
+      <div style="font-size:0.9rem; opacity:0.6;">🔥 ${streak} 天连续</div>
       <div class="learn-complete-stats">
         <div class="learn-complete-stat">
           <div class="learn-complete-stat-val" style="color:#34C759;">${known}</div>
-          <div class="learn-complete-stat-label">认识</div>
+          <div class="learn-complete-stat-label">正确</div>
         </div>
         <div class="learn-complete-stat">
           <div class="learn-complete-stat-val" style="color:#FF3B30;">${unknown}</div>
-          <div class="learn-complete-stat-label">不认识</div>
+          <div class="learn-complete-stat-label">需加强</div>
         </div>
         <div class="learn-complete-stat">
           <div class="learn-complete-stat-val" style="font-size:1.5rem;">${formatMinutes(duration)}</div>
           <div class="learn-complete-stat-label">用时</div>
         </div>
       </div>
-
-      <div class="learn-complete-card">
-        <div style="font-size:0.9rem; opacity:0.7;">${learnSession.lessonTitle}</div>
-        <div style="display:flex; align-items:center; gap:8px; margin-top:8px; justify-content:center;">
-          <div style="flex:1; height:4px; background:rgba(255,255,255,0.15); border-radius:2px; overflow:hidden;">
-            <div style="height:100%; background:rgba(255,255,255,0.7); border-radius:2px; width:${progress.progress}%; transition:width 0.6s ease;"></div>
-          </div>
-          <span style="font-size:0.8rem; opacity:0.6;">${progress.learnedWords}/${progress.totalWords}</span>
-        </div>
+      <div class="learn-complete-card" style="text-align:center;">
+        <div style="opacity:0.7;">待复习 ${reviewSummary.due} 词</div>
       </div>
-
       <div class="learn-complete-actions">
-        <button class="learn-complete-btn" onclick="navigate('lesson', {lessonId: ${learnSession.lessonId}})">
-          返回课程
-        </button>
-        <button class="learn-complete-btn primary" onclick="navigate('quiz', {lessonId: ${learnSession.lessonId}})">
-          测验一下 📝
-        </button>
+        <button class="learn-complete-btn" onclick="navigate('home')">返回首页</button>
+        <button class="learn-complete-btn primary" onclick="navigate('review')">去复习</button>
       </div>
     </div>
   `;
 }
+
+function setupLearnFlowListeners() {}

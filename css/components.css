@@ -536,3 +536,87 @@
 }
 
 .toggle.on::after { transform: translateX(20px); }
+
+/* ---- Dark Theme Overrides ---- */
+
+.card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
+  color: rgba(255,255,255,0.85);
+}
+
+.btn-outline {
+  color: rgba(255,255,255,0.75);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.badge-new     { background: rgba(91,141,239,0.2); color: #8DB3F5; }
+.badge-learning { background: rgba(250,173,20,0.2); color: #FADB14; }
+.badge-review  { background: rgba(82,196,26,0.2); color: #95DE64; }
+.badge-mastered { background: rgba(124,58,237,0.2); color: #B794F4; }
+
+.progress-bar { background: rgba(255,255,255,0.08); }
+
+.section-title { color: rgba(255,255,255,0.85); }
+
+.empty-state { color: rgba(255,255,255,0.85); }
+.empty-state-title { color: rgba(255,255,255,0.9); }
+.empty-state-desc { color: rgba(255,255,255,0.5); }
+
+.settings-item {
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.85);
+}
+.settings-item-label { color: rgba(255,255,255,0.85); }
+.settings-item select {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.85);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.word-item {
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.85);
+}
+.word-item:active { background: rgba(255,255,255,0.08); }
+
+.stat-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
+}
+.stat-value { color: rgba(255,255,255,0.9); }
+.stat-label { color: rgba(255,255,255,0.45); }
+
+.option-btn {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.85);
+}
+
+.lesson-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
+}
+.lesson-card-num { color: rgba(255,255,255,0.85); }
+.lesson-card-title { color: rgba(255,255,255,0.5); }
+.lesson-card.selected {
+  border-color: rgba(91,141,239,0.4);
+  background: rgba(91,141,239,0.15);
+}
+
+.day-item {
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.85);
+}
+
+.quality-btn {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+}
+.quality-num { color: rgba(255,255,255,0.85); }
+.quality-label { color: rgba(255,255,255,0.45); }

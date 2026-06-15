@@ -7,14 +7,14 @@ let reviewSession = null;
 let reviewRevealed = false;
 
 const REVIEW_GRADIENTS = [
-  'linear-gradient(160deg, #1A2980 0%, #26D0CE 100%)',
+  'linear-gradient(160deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(160deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(160deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(160deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(160deg, #30cfd0 0%, #330867 100%)',
   'linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
   'linear-gradient(160deg, #8E2DE2 0%, #4A00E0 100%)',
-  'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
-  'linear-gradient(160deg, #11998e 0%, #38ef7d 100%)',
-  'linear-gradient(160deg, #3A1C71 0%, #D76D77 50%, #FFAF7B 100%)',
-  'linear-gradient(160deg, #2C3E50 0%, #3498DB 100%)',
-  'linear-gradient(160deg, #0B0F19 0%, #1A2333 40%, #2D4059 100%)',
 ];
 
 async function renderReviewFlow() {

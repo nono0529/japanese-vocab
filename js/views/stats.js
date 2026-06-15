@@ -51,14 +51,15 @@ async function renderStats() {
     ? getCurrentWeekDates()
     : getCurrentMonthDates();
 
-  // Batch-fetch all stats at once
+  // Batch-fetch all stats at once, preserving calendar metadata
   const dateKeys = calendarDates.map(cd => cd.date);
   const statRows = await db.dailyStats.bulkGet(dateKeys);
   const days = calendarDates.map((cd, i) => {
+    const row = statRows[i];
     if (cd.date > today) {
-      return { date: cd.date, wordsLearned: 0, wordsReviewed: 0, isFuture: true };
+      return { date: cd.date, day: cd.day, weekday: cd.weekday, wordsLearned: 0, wordsReviewed: 0, isFuture: true };
     }
-    return statRows[i] || { date: cd.date, wordsLearned: 0, wordsReviewed: 0 };
+    return { date: cd.date, day: cd.day, weekday: cd.weekday, wordsLearned: row?.wordsLearned || 0, wordsReviewed: row?.wordsReviewed || 0 };
   });
 
   const streak = await getSetting('streak', 0);

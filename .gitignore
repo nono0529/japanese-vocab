@@ -1,0 +1,13 @@
+# 临时文件
+temp_pages/
+
+# 生成脚本（运行时不需要）
+scripts/
+
+# 源PDF（37MB，不需要部署）
+*.pdf
+
+# 系统文件
+.DS_Store
+Thumbs.db
+Desktop.ini

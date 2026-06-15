@@ -1,0 +1,19 @@
+/* Learn Screen - Card Flip & Gestures */
+
+.learn-screen, .review-screen, .quiz-screen {
+  min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+}
+
+/* Card flip interaction states */
+.card-flip-inner.flipped {
+  transform: rotateY(-180deg);
+}
+
+/* Swipe visual feedback */
+.card-flip-inner.swiping-right {
+  border-left: 4px solid var(--color-success);
+}
+
+.card-flip-inner.swiping-left {
+  border-right: 4px solid var(--color-danger);
+}

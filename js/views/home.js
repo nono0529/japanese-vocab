@@ -1,6 +1,6 @@
 /* ============================
-   不背日语 — Home (不背单词 Style)
-   Two cards: Learn + Review
+   不背日语 — Home (不背单词 Style) v2
+   Light theme · Two cards: Learn + Review
    ============================ */
 
 async function renderHome() {
@@ -15,46 +15,46 @@ async function renderHome() {
 
   const newCount = await db.learningState.where('status').equals('new').count();
 
-  const grads = [
-    'linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
-    'linear-gradient(160deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%)',
-    'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
-    'linear-gradient(160deg, #1B1B2F 0%, #2C2C54 50%, #3D3D6B 100%)',
-  ];
-  const bg = grads[Math.floor(Math.random() * grads.length)];
-
   return `
-    <div class="learn-bg" style="background: ${bg};"></div>
-    <div class="home-container fade-in">
-      <div style="text-align:center; padding-top:12px;">
-        <div style="font-size:0.9rem; color:rgba(255,255,255,0.6);">🔥 连续 ${streak} 天</div>
+    <div class="home-container fade-in" style="padding-top:20px;">
+      <!-- Header -->
+      <div style="text-align:center; margin-bottom:20px;">
+        <div style="font-size:2rem; font-weight:700; color:var(--color-text); letter-spacing:0.04em;">不背日语</div>
+        <div style="font-size:0.85rem; color:var(--color-text-secondary); margin-top:4px;">🔥 连续 ${streak} 天</div>
       </div>
 
-      <div style="display:flex; justify-content:center; gap:24px; margin:16px 0; color:rgba(255,255,255,0.7); font-size:0.85rem;">
-        <span>今日新学 ${learnedToday}</span>
-        <span>今日复习 ${reviewedToday}</span>
+      <!-- Today stats -->
+      <div style="display:flex; justify-content:center; gap:28px; margin-bottom:24px;">
+        <div style="text-align:center;">
+          <div style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">${learnedToday}<span style="font-size:0.8rem; font-weight:400; color:var(--color-text-secondary);">/${dailyGoal}</span></div>
+          <div style="font-size:0.78rem; color:var(--color-text-secondary);">今日新学</div>
+        </div>
+        <div style="width:1px; background:var(--color-border);"></div>
+        <div style="text-align:center;">
+          <div style="font-size:1.5rem; font-weight:700; color:#FF9500;">${reviewedToday}</div>
+          <div style="font-size:0.78rem; color:var(--color-text-secondary);">今日复习</div>
+        </div>
       </div>
 
       <!-- Learn Card -->
       <div class="home-card" onclick="startLearn()">
         <div class="home-card-icon">📖</div>
         <div class="home-card-title">学习新词</div>
-        <div class="home-card-count">${newCount > 0 ? newCount + ' 个待学' : '已全部学完 🎉'}</div>
-        <div class="home-card-sub">Learn</div>
+        <div class="home-card-count">${newCount > 0 ? newCount + ' 个单词待学习' : '已全部学完 🎉'}</div>
+        <div class="home-card-sub">LEARN</div>
       </div>
 
       <!-- Review Card -->
       <div class="home-card" onclick="startReview()" style="animation-delay:0.1s">
         <div class="home-card-icon">🔄</div>
         <div class="home-card-title">复习巩固</div>
-        <div class="home-card-count">${reviewSummary.due > 0 ? reviewSummary.due + ' 个待复习' : '暂无待复习 ✅'}</div>
-        <div class="home-card-sub">Review</div>
+        <div class="home-card-count">${reviewSummary.due > 0 ? reviewSummary.due + ' 个单词待复习' : '暂无待复习 ✅'}</div>
+        <div class="home-card-sub">REVIEW</div>
       </div>
 
-      <div style="text-align:center; margin-top:24px;">
-        <button onclick="navigate('settings')" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.7); padding:8px 20px; border-radius:20px; font-size:0.85rem; cursor:pointer; font-family:var(--font-mixed);">
-          ⚙️ 设置
-        </button>
+      <!-- Motto -->
+      <div style="text-align:center; margin-top:auto; padding:24px 0; opacity:0.4; font-size:0.8rem;">
+        不背日语 · 自然的词汇习得
       </div>
     </div>
   `;

@@ -1,18 +1,20 @@
 /* ============================
-   不背日语 — SRS Review View
-   不背单词 Style
+   不背日语 — SRS Review View v2
+   不背单词 Style · Brighter gradients
    ============================ */
 
 let reviewSession = null;
 let reviewRevealed = false;
 
 const REVIEW_GRADIENTS = [
-  'linear-gradient(160deg, #1B1B2F 0%, #2C2C54 50%, #3D3D6B 100%)',
+  'linear-gradient(160deg, #1A2980 0%, #26D0CE 100%)',
   'linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
+  'linear-gradient(160deg, #8E2DE2 0%, #4A00E0 100%)',
   'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
-  'linear-gradient(160deg, #232526 0%, #3A3D40 100%)',
-  'linear-gradient(160deg, #0C0C1D 0%, #1A1A3E 50%, #16213E 100%)',
-  'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
+  'linear-gradient(160deg, #11998e 0%, #38ef7d 100%)',
+  'linear-gradient(160deg, #3A1C71 0%, #D76D77 50%, #FFAF7B 100%)',
+  'linear-gradient(160deg, #2C3E50 0%, #3498DB 100%)',
+  'linear-gradient(160deg, #0B0F19 0%, #1A2333 40%, #2D4059 100%)',
 ];
 
 async function renderReviewFlow() {
@@ -29,11 +31,11 @@ async function renderReviewFlow() {
 
   if (dueWords.length === 0) {
     return `
-      <div class="empty-state">
+      <div class="empty-state" style="padding-top:80px;">
         <div class="empty-state-icon">🎉</div>
         <div class="empty-state-title">没有需要复习的单词！</div>
         <div class="empty-state-desc">太棒了，今天不需要复习。学点新词吧！</div>
-        <button class="btn btn-primary mt-md" onclick="navigate('lessons')">去学习</button>
+        <button class="btn btn-primary mt-md" onclick="navigate('home')">去学习</button>
       </div>
     `;
   }
@@ -57,11 +59,8 @@ function renderReviewCard(session) {
   const total = session.words.length;
   const bg = session.gradient;
 
-  // Status label
   const statusLabel = word.state.status === 'learning' ? '新学' : '复习';
-  const lapseInfo = word.state.lapses > 0
-    ? ` · 遗忘${word.state.lapses}次`
-    : '';
+  const lapseInfo = word.state.lapses > 0 ? ` · 遗忘${word.state.lapses}次` : '';
 
   return `
     <div class="learn-bg" style="background: ${bg};"></div>
@@ -72,6 +71,7 @@ function renderReviewCard(session) {
           <div class="learn-progress-bar-fill" style="width:${(progress / total) * 100}%"></div>
         </div>
         <span class="learn-progress-text">${progress}/${total}</span>
+        <button class="learn-menu-btn" onclick="event.stopPropagation(); showLearnMenu('${word.localId}')">⋯</button>
       </div>
 
       <!-- Status info -->
@@ -119,7 +119,7 @@ function renderReviewCard(session) {
         <button class="learn-btn learn-btn-unknown" style="font-size:0.9rem;" onclick="onReviewRate(1)">
           忘记了
         </button>
-        <button class="learn-btn" style="flex:1; padding:16px; border:none; border-radius:var(--radius-xl); font-size:0.9rem; font-weight:600; font-family:var(--font-mixed); cursor:pointer; background:rgba(255,255,255,0.2); color:rgba(255,255,255,0.85); border:1.5px solid rgba(255,255,255,0.15); transition:all var(--transition-fast); letter-spacing:0.02em;" onclick="onReviewRate(3)">
+        <button class="learn-btn" style="flex:1; padding:16px; border:none; border-radius:14px; font-size:0.9rem; font-weight:600; font-family:var(--font-mixed); cursor:pointer; background:rgba(255,255,255,0.18); color:rgba(255,255,255,0.85); transition:all var(--transition-fast); letter-spacing:0.02em;" onclick="onReviewRate(3)">
           模糊
         </button>
         <button class="learn-btn learn-btn-known" style="font-size:0.9rem;" onclick="onReviewRate(5)">
@@ -141,6 +141,12 @@ function revealReviewMeaning() {
   if (revealArea) revealArea.classList.add('show');
   if (actions) actions.classList.add('show');
   if (hint) hint.style.opacity = '0';
+
+  // Auto-play pronunciation on reveal
+  const word = reviewSession.words[reviewSession.currentIndex];
+  if (word && word.reading) {
+    setTimeout(() => TTS.speakWord(word.reading), 300);
+  }
 }
 
 function setupReviewCardListener() {
@@ -152,7 +158,6 @@ async function onReviewRate(quality) {
 
   const word = reviewSession.words[reviewSession.currentIndex];
 
-  // Apply SM-2 algorithm
   await rateWord(word.localId, quality, 'review', 0);
 
   reviewSession.ratings.push({ word, quality });

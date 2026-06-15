@@ -1,6 +1,6 @@
 /* ============================
-   不背日语 — App Bootstrap & Router v3
-   不背单词风格 · 3-Tab: 学习 | 听写 | 统计
+   不背日语 — App Bootstrap & Router v4
+   不背单词风格 · 3-Tab: 学习 | 生词本 | 统计
    ============================ */
 
 const AppState = {
@@ -15,7 +15,7 @@ const routes = {
   '#home':      { render: renderHome,      title: '不背日语', tab: 'home' },
   '#learn':     { render: renderLearnFlow,  title: '学习新词', tab: 'home' },
   '#review':    { render: renderReviewFlow, title: '复习',     tab: 'home' },
-  '#dictation': { render: renderDictation,  title: '听写',     tab: 'dictation' },
+  '#wordbook':  { render: renderWordbook,  title: '生词本',   tab: 'wordbook' },
   '#stats':     { render: renderStats,      title: '统计',     tab: 'stats' },
   '#settings':  { render: renderSettings,   title: '设置',     tab: 'stats' },
 };
@@ -99,9 +99,9 @@ function updateTabBar(activeTab) {
   }
 
   const tabs = [
-    { id: 'home',       icon: '📖', label: '学习' },
-    { id: 'dictation',  icon: '✍️', label: '听写' },
-    { id: 'stats',      icon: '📊', label: '统计' },
+    { id: 'home',      icon: '📖', label: '学习' },
+    { id: 'wordbook',  icon: '📋', label: '生词本' },
+    { id: 'stats',     icon: '📊', label: '统计' },
   ];
 
   tabBar.innerHTML = tabs.map(t => `
@@ -121,9 +121,6 @@ function setupCurrentView(hash) {
   }
   if (hash === '#review' && typeof setupReviewCardListener === 'function') {
     setupReviewCardListener();
-  }
-  if (hash === '#dictation' && typeof setupDictationListeners === 'function') {
-    setupDictationListeners();
   }
 }
 

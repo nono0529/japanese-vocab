@@ -1,23 +1,26 @@
 /* ============================
-   不背日语 — Learn Flow v3
+   不背日语 — Learn Flow v4
    不背单词 Style: 10词/组, 答对3次毕业, 自动发音, 结果页
    ============================ */
 
 let learnSession = null;
 
+// Brighter, more varied gradients — 不背单词 wallpaper style
 const GRADS = [
   'linear-gradient(160deg, #0F2027 0%, #203A43 40%, #2C5364 100%)',
+  'linear-gradient(160deg, #1A2980 0%, #26D0CE 100%)',
+  'linear-gradient(160deg, #4CA1AF 0%, #2C3E50 100%)',
+  'linear-gradient(160deg, #8E2DE2 0%, #4A00E0 100%)',
+  'linear-gradient(160deg, #11998e 0%, #38ef7d 100%)',
+  'linear-gradient(160deg, #3A1C71 0%, #D76D77 50%, #FFAF7B 100%)',
   'linear-gradient(160deg, #1A1A2E 0%, #16213E 40%, #0F3460 100%)',
   'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
-  'linear-gradient(160deg, #1B1B2F 0%, #2C2C54 40%, #3D3D6B 100%)',
-  'linear-gradient(160deg, #0C0C1D 0%, #1A1A3E 40%, #16213E 100%)',
-  'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
-  'linear-gradient(160deg, #0D1525 0%, #1A2840 40%, #243D58 100%)',
-  'linear-gradient(160deg, #121A2A 0%, #1C2D48 40%, #2A4060 100%)',
+  'linear-gradient(160deg, #2C3E50 0%, #3498DB 100%)',
+  'linear-gradient(160deg, #0B0F19 0%, #1A2333 40%, #2D4059 100%)',
 ];
 
 async function renderLearnFlow() {
-  const batchSize = 10; // 10 words per batch like 不背单词
+  const batchSize = 10;
   const newWordIds = new Set(
     (await db.learningState.where('status').equals('new').toArray()).map(s => s.wordId)
   );
@@ -25,11 +28,11 @@ async function renderLearnFlow() {
   const newWords = allWords.filter(w => newWordIds.has(w.localId));
 
   if (newWords.length === 0) {
-    return `<div class="empty-state">
+    return `<div class="empty-state" style="padding-top:80px;">
       <div class="empty-state-icon">🎉</div>
       <div class="empty-state-title">没有新词了！</div>
       <div class="empty-state-desc">所有单词都已学过，去复习吧</div>
-      <button class="btn btn-primary mt-md" onclick="navigate('home')">返回首页</button>
+      <button class="btn btn-primary mt-md" onclick="navigate('review')">去复习</button>
     </div>`;
   }
 
@@ -38,10 +41,10 @@ async function renderLearnFlow() {
   learnSession = {
     words: batch,
     currentIndex: 0,
-    phase: 'question', // 'question' | 'result'
+    phase: 'question',
     correct: [],
     wrong: [],
-    correctCounts: {},  // wordId -> consecutive correct count
+    correctCounts: {},
     startTime: Date.now(),
     gradient: GRADS[Math.floor(Math.random() * GRADS.length)],
     batchNum: 1,
@@ -202,7 +205,7 @@ async function onLearnContinue() {
         status: 'learning',
         interval: 1,
         repetitions: 1,
-        nextReviewDate: addDays(todayISO(), 1), // Review tomorrow, not today
+        nextReviewDate: addDays(todayISO(), 1),
       });
     }
   }
@@ -218,6 +221,19 @@ async function onLearnContinue() {
     }
     const app = document.getElementById('app');
     app.innerHTML = renderQuestionView(learnSession);
+    // Auto-play TTS for the next word
+    autoPlayLearnWord();
+  }
+}
+
+/* ---- Auto-play TTS for current word ---- */
+function autoPlayLearnWord() {
+  if (!learnSession || learnSession.phase !== 'question') return;
+  const word = learnSession.words[learnSession.currentIndex];
+  if (word && word.reading) {
+    setTimeout(() => {
+      TTS.speakWord(word.reading);
+    }, 350);
   }
 }
 
@@ -278,16 +294,28 @@ function generateLearnOptions(word) {
 }
 
 function showLearnMenu(wordId) {
+  // Remove any existing menu
+  const existing = document.querySelector('.learn-popup-menu');
+  if (existing) existing.remove();
+
   const menu = document.createElement('div');
   menu.className = 'learn-popup-menu';
   menu.innerHTML = `
     <div class="learn-popup-item" onclick="markWordKnown('${wordId}'); this.parentElement.remove();">✅ 标记为熟词</div>
-    <div class="learn-popup-item" onclick="this.parentElement.remove();">📋 加入生词本</div>
-    <div class="learn-popup-item" style="color:rgba(255,255,255,0.4);" onclick="this.parentElement.remove();">取消</div>
+    <div class="learn-popup-item" onclick="addToWordbook('${wordId}'); this.parentElement.remove();">📋 加入生词本</div>
+    <div class="learn-popup-item" style="color:var(--color-text-secondary);" onclick="this.parentElement.remove();">取消</div>
   `;
   document.body.appendChild(menu);
-  menu.addEventListener('click', (e) => { if (e.target === menu) menu.remove(); });
   setTimeout(() => menu.classList.add('show'), 10);
+
+  // Close on outside click
+  const closeHandler = (e) => {
+    if (!menu.contains(e.target)) {
+      menu.remove();
+      document.removeEventListener('click', closeHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeHandler), 50);
 }
 
 async function markWordKnown(wordId) {
@@ -303,12 +331,27 @@ async function markWordKnown(wordId) {
   showToast('已标记为熟词');
 }
 
+async function addToWordbook(wordId) {
+  const id = parseInt(wordId);
+  const existing = await getWordbookItems();
+  if (!existing.includes(id)) {
+    existing.push(id);
+    await setSetting('wordbook', JSON.stringify(existing));
+    showToast('已加入生词本');
+  } else {
+    showToast('已在生词本中');
+  }
+  // Close menu
+  const menu = document.querySelector('.learn-popup-menu');
+  if (menu) menu.remove();
+}
+
+async function getWordbookItems() {
+  const raw = await getSetting('wordbook', '[]');
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
 function setupLearnFlowListeners() {
-  // Auto-play TTS when card loads
-  setTimeout(() => {
-    if (learnSession && learnSession.phase === 'question') {
-      const word = learnSession.words[learnSession.currentIndex];
-      if (word && word.reading) TTS.speakWord(word.reading);
-    }
-  }, 400);
+  // Auto-play TTS when first card loads
+  autoPlayLearnWord();
 }

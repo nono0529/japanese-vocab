@@ -3,7 +3,7 @@
    Cache-first strategy for offline support
    ============================ */
 
-const CACHE_NAME = 'bubei-nihongo-v2';
+const CACHE_NAME = 'bubei-nihongo-v3';
 
 const PRECACHE_URLS = [
   './',
@@ -25,8 +25,10 @@ const PRECACHE_URLS = [
   './js/views/lessonList.js',
   './js/views/learn.js',
   './js/views/review.js',
+  './js/views/dictation.js',
   './js/views/quiz.js',
   './js/views/stats.js',
+  './js/views/wordbook.js',
   './js/views/settings.js',
   './lib/dexie.min.js',
   './data/vocabulary.json',

@@ -1,0 +1,18 @@
+/* Quiz Screen Styles */
+
+.option-btn {
+  animation: fadeIn 0.2s ease forwards;
+  animation-delay: calc(var(--i, 0) * 0.05s);
+}
+
+.option-btn:disabled {
+  pointer-events: none;
+}
+
+.quiz-answer-reveal {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 8px 0;
+  animation: scaleIn 0.3s ease;
+}

@@ -1,5 +1,11 @@
 /* Quiz Screen Styles */
 
+.quiz-screen {
+  min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
+}
+
 .option-btn {
   animation: fadeIn 0.2s ease forwards;
   animation-delay: calc(var(--i, 0) * 0.05s);

@@ -2,18 +2,26 @@
    不背日语 — Lesson List View
    ============================ */
 
+const LESSON_TITLES = {
+  1: '第1課 李さんは中国人です', 2: '第2課 これは本です', 3: '第3課 ここはデパートです',
+  4: '第4課 部屋に机といすがあります', 5: '第5課 森さんは7時に起きます',
+  6: '第6課 吉田さんは来月中国へ行きます', 7: '第7課 李さんは毎日コーヒーを飲みます',
+  8: '第8課 李さんは日本語で手紙を書きます', 9: '第9課 四川料理は辛いです',
+  10: '第10課 京都の紅葉は有名です', 11: '第11課 小野さんは歌が好きです',
+  12: '第12課 李さんは森さんより若いです', 13: '第13課 机の上に本が三冊あります',
+  14: '第14課 昨日デパートへ行って買い物しました', 15: '第15課 小野さんは今新聞を読んでいます',
+  16: '第16課 ホテルの部屋は広くて明るいです', 17: '第17課 わたしは新しい洋服が欲しいです',
+  18: '第18課 携帯電話はとても小さくなりました', 19: '第19課 部屋のかぎを忘れないでください',
+  20: '第20課 スミスさんはピアノを弾くことができます', 21: '第21課 わたしはすき焼きを食べたことがあります',
+  22: '第22課 森さんは毎晩テレビを見る', 23: '第23課 休みの日は散歩したり買い物に行ったりします',
+  24: '第24課 李さんはもうすぐ来ると思います'
+};
+
 async function renderLessonList() {
   const lessonProgress = await getAllLessonProgress();
 
-  const lessonTitles = {
-    1: '第1課 初対面', 2: '第2課 私の家族', 3: '第3課 私の寮', 4: '第4課 私の一日',
-    5: '第5課 好きな音楽', 6: '第6課 外出', 7: '第7課 買い物', 8: '第8課 プレゼント',
-    9: '第9課 スポーツ', 10: '第10課 料理', 11: '第11課 着物', 12: '第12課 計画',
-    13: '第13課 思い出', 14: '第14課 見物'
-  };
-
   const rows = [];
-  for (let i = 1; i <= 14; i++) {
+  for (let i = 1; i <= 24; i++) {
     const lp = lessonProgress.find(l => l.lessonId === i);
     const total = lp ? lp.totalWords : 0;
     const learned = lp ? lp.learnedWords : 0;
@@ -21,14 +29,16 @@ async function renderLessonList() {
 
     rows.push(`
       <div class="card fade-in" onclick="navigate('lesson', {lessonId: ${i}})"
-           style="display:flex; align-items:center; gap:12px; cursor:pointer; animation-delay:${i * 0.04}s; padding:14px 16px;">
+           style="display:flex; align-items:center; gap:12px; cursor:pointer; animation-delay:${i * 0.03}s; padding:14px 16px;">
         <div style="width:36px; height:36px; border-radius:50%; background:var(--color-primary-bg);
                     display:flex; align-items:center; justify-content:center;
-                    font-weight:700; font-size:0.9rem; color:var(--color-primary); flex-shrink:0;">
+                    font-weight:700; font-size:0.85rem; color:var(--color-primary); flex-shrink:0;">
           ${i}
         </div>
         <div style="flex:1; min-width:0;">
-          <div style="font-size:0.95rem; font-weight:500;">${lessonTitles[i] || '第' + i + '課'}</div>
+          <div style="font-size:0.95rem; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            ${LESSON_TITLES[i] || '第' + i + '課'}
+          </div>
           <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
             <div class="progress-bar" style="flex:1;">
               <div class="progress-bar-fill${progress >= 100 ? ' success' : ''}" style="width:${progress}%"></div>
@@ -59,14 +69,7 @@ async function renderWordList(lessonId) {
   const words = await getLessonWordStates(lessonId);
   const progress = await getLessonProgress(lessonId);
 
-  const lessonTitles = {
-    1: '第1課 初対面', 2: '第2課 私の家族', 3: '第3課 私の寮', 4: '第4課 私の一日',
-    5: '第5課 好きな音楽', 6: '第6課 外出', 7: '第7課 買い物', 8: '第8課 プレゼント',
-    9: '第9課 スポーツ', 10: '第10課 料理', 11: '第11課 着物', 12: '第12課 計画',
-    13: '第13課 思い出', 14: '第14課 見物'
-  };
-
-  const title = lessonTitles[lessonId] || `第${lessonId}課`;
+  const title = LESSON_TITLES[lessonId] || `第${lessonId}課`;
   updateTopBar(title);
 
   const newCount = words.filter(w => w.state.status === 'new').length;

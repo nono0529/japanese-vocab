@@ -12,20 +12,26 @@ async function renderHome() {
 
   const learnedToday = dailyStats ? dailyStats.wordsLearned : 0;
   const reviewedToday = dailyStats ? dailyStats.wordsReviewed : 0;
-  const totalNewCount = reviewSummary.newToday;
   const totalLearned = lessonProgress.reduce((sum, lp) => sum + lp.learnedWords, 0);
   const totalWords = lessonProgress.reduce((sum, lp) => sum + lp.totalWords, 0);
   const overallProgress = totalWords > 0 ? Math.round((totalLearned / totalWords) * 100) : 0;
 
-  // Time spent today
   const todayTimeMs = dailyStats ? (dailyStats.totalTimeSpent || 0) : 0;
   const timeStr = formatMinutes(todayTimeMs);
 
+  // 新标日 24课标题
   const lessonTitles = {
-    1: '初対面', 2: '私の家族', 3: '私の寮', 4: '私の一日',
-    5: '好きな音楽', 6: '外出', 7: '買い物', 8: 'プレゼント',
-    9: 'スポーツ', 10: '料理', 11: '着物', 12: '計画',
-    13: '思い出', 14: '見物'
+    1: '李さんは中国人です', 2: 'これは本です', 3: 'ここはデパートです',
+    4: '部屋に机といすがあります', 5: '森さんは7時に起きます', 6: '吉田さんは来月中国へ行きます',
+    7: '李さんは毎日コーヒーを飲みます', 8: '李さんは日本語で手紙を書きます',
+    9: '四川料理は辛いです', 10: '京都の紅葉は有名です',
+    11: '小野さんは歌が好きです', 12: '李さんは森さんより若いです',
+    13: '机の上に本が三冊あります', 14: '昨日デパートへ行って買い物しました',
+    15: '小野さんは今新聞を読んでいます', 16: 'ホテルの部屋は広くて明るいです',
+    17: 'わたしは新しい洋服が欲しいです', 18: '携帯電話はとても小さくなりました',
+    19: '部屋のかぎを忘れないでください', 20: 'スミスさんはピアノを弾くことができます',
+    21: 'わたしはすき焼きを食べたことがあります', 22: '森さんは毎晩テレビを見る',
+    23: '休みの日は散歩したり買い物に行ったりします', 24: '李さんはもうすぐ来ると思います'
   };
 
   return `
@@ -71,11 +77,11 @@ async function renderHome() {
       <span class="section-title">课程进度</span>
     </div>
     <div class="lesson-grid">
-      ${Array.from({length: 14}, (_, i) => {
+      ${Array.from({length: 24}, (_, i) => {
         const lp = lessonProgress.find(l => l.lessonId === i + 1) || { progress: 0, learnedWords: 0, totalWords: 0 };
         return `
           <div class="lesson-card fade-in" onclick="navigate('lesson', {lessonId: ${i + 1}})"
-               style="animation-delay:${i * 0.03}s">
+               style="animation-delay:${i * 0.02}s">
             <div class="lesson-card-num">${i + 1}</div>
             ${lp.totalWords > 0 ? `
               <div class="lesson-card-progress">

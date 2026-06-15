@@ -1,19 +1,340 @@
-/* Learn Screen - Card Flip & Gestures */
+/* ============================
+   Learn Screen — 不背单词 Style
+   ============================ */
 
-.learn-screen, .review-screen, .quiz-screen {
+/* Full-screen gradient background wrapper */
+.learn-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: background 1.2s ease;
+}
+
+/* Main learn container — sits above background */
+.learn-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
   min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+  min-height: calc(100dvh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+  padding: 0 var(--space-md);
+  /* Prevent horizontal swipe from triggering browser back/forward */
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
 }
 
-/* Card flip interaction states */
-.card-flip-inner.flipped {
-  transform: rotateY(-180deg);
+/* ---- Progress Section (top) ---- */
+
+.learn-progress {
+  padding: var(--space-md) 0 var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
-/* Swipe visual feedback */
-.card-flip-inner.swiping-right {
-  border-left: 4px solid var(--color-success);
+.learn-progress-bar-wrap {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,0.2);
+  border-radius: var(--radius-full);
+  overflow: hidden;
 }
 
-.card-flip-inner.swiping-left {
-  border-right: 4px solid var(--color-danger);
+.learn-progress-bar-fill {
+  height: 100%;
+  background: rgba(255,255,255,0.9);
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
+
+.learn-progress-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  min-width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Word Display Area (center) ---- */
+
+.learn-word-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-xl) 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.learn-word-japanese {
+  font-size: 2.6rem;
+  font-weight: 700;
+  font-family: var(--font-jp);
+  color: rgba(255,255,255,0.95);
+  letter-spacing: 0.03em;
+  line-height: 1.3;
+  transition: all var(--transition-normal);
+}
+
+.learn-word-reading {
+  font-size: 1.05rem;
+  font-family: var(--font-jp);
+  color: rgba(255,255,255,0.65);
+  margin-top: var(--space-sm);
+  letter-spacing: 0.02em;
+}
+
+.learn-word-pos {
+  margin-top: var(--space-md);
+}
+
+.learn-word-pos-badge {
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.learn-word-hint {
+  margin-top: var(--space-xl);
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.02em;
+  transition: opacity 0.3s ease;
+}
+
+/* ---- Revealed Meaning Area ---- */
+
+.learn-reveal-area {
+  text-align: center;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.45s ease, opacity 0.35s ease, margin 0.35s ease;
+  margin-top: 0;
+}
+
+.learn-reveal-area.show {
+  max-height: 400px;
+  opacity: 1;
+  margin-top: var(--space-lg);
+}
+
+.learn-meaning-divider {
+  width: 32px;
+  height: 2px;
+  background: rgba(255,255,255,0.25);
+  margin: 0 auto var(--space-md);
+  border-radius: 1px;
+}
+
+.learn-meaning-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  letter-spacing: 0.02em;
+}
+
+.learn-example-box {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.06);
+  text-align: left;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.learn-example-jp {
+  font-size: 0.9rem;
+  font-family: var(--font-jp);
+  color: rgba(255,255,255,0.85);
+  line-height: 1.6;
+  margin-bottom: var(--space-xs);
+}
+
+.learn-example-reading {
+  font-size: 0.8rem;
+  font-family: var(--font-jp);
+  color: rgba(255,255,255,0.5);
+  margin-bottom: var(--space-xs);
+}
+
+.learn-example-cn {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+}
+
+/* ---- Audio Button ---- */
+
+.learn-audio-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.8);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  margin-top: var(--space-md);
+}
+
+.learn-audio-btn:active {
+  background: rgba(255,255,255,0.2);
+  transform: scale(0.92);
+}
+
+/* ---- Action Buttons (bottom, visible after reveal) ---- */
+
+.learn-actions {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-lg) 0;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+.learn-actions.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.learn-btn {
+  flex: 1;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-xl);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-mixed);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: 0.02em;
+}
+
+.learn-btn:active { transform: scale(0.95); }
+
+.learn-btn-unknown {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+  border: 1.5px solid rgba(255,255,255,0.15);
+}
+
+.learn-btn-unknown:active { background: rgba(255,255,255,0.22); }
+
+.learn-btn-known {
+  background: rgba(255,255,255,0.9);
+  color: var(--color-text);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.learn-btn-known:active {
+  background: rgba(255,255,255,0.75);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+/* ---- Complete Screen ---- */
+
+.learn-complete {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: calc(100vh - var(--topbar-height) - var(--tabbar-height) - var(--safe-top) - var(--safe-bottom));
+  padding: var(--space-xl) var(--space-md);
+  color: rgba(255,255,255,0.95);
+}
+
+.learn-complete-icon {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+}
+
+.learn-complete-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+  letter-spacing: 0.02em;
+}
+
+.learn-complete-stats {
+  display: flex;
+  gap: var(--space-xl);
+  margin: var(--space-lg) 0;
+}
+
+.learn-complete-stat {
+  text-align: center;
+}
+
+.learn-complete-stat-val {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.learn-complete-stat-label {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.learn-complete-card {
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-top: var(--space-md);
+  backdrop-filter: blur(4px);
+}
+
+.learn-complete-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.learn-complete-btn {
+  padding: 12px 28px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.9);
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: var(--font-mixed);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  letter-spacing: 0.01em;
+}
+
+.learn-complete-btn:active { background: rgba(255,255,255,0.2); }
+
+.learn-complete-btn.primary {
+  background: rgba(255,255,255,0.9);
+  color: var(--color-text);
+  border: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }

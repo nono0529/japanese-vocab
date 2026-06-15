@@ -1,19 +1,35 @@
 /* ============================
    不背日语 — New Word Learning View
+   不背单词 Style: Tap to reveal, beautiful gradients
    ============================ */
 
 let learnSession = null;
+let learnRevealed = false;
+
+// Beautiful dark gradient wallpapers (不背单词 style)
+const LEARN_GRADIENTS = [
+  'linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
+  'linear-gradient(160deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%)',
+  'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
+  'linear-gradient(160deg, #0B0F19 0%, #1A2333 50%, #2D4059 100%)',
+  'linear-gradient(160deg, #1B1B2F 0%, #2C2C54 50%, #3D3D6B 100%)',
+  'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
+  'linear-gradient(160deg, #0C0C1D 0%, #1A1A3E 50%, #16213E 100%)',
+  'linear-gradient(160deg, #232526 0%, #3A3D40 100%)',
+];
+
+function pickGradient() {
+  return LEARN_GRADIENTS[Math.floor(Math.random() * LEARN_GRADIENTS.length)];
+}
 
 async function renderLearn(lessonId) {
   const dailyGoal = parseInt(await getSetting('dailyNewWordGoal', '10'));
   const words = await getWordsToLearn(lessonId, dailyGoal);
 
-  const lessonTitles = {
-    1: '第1課 初対面', 2: '第2課 私の家族', 3: '第3課 私の寮', 4: '第4課 私の一日',
-    5: '第5課 好きな音楽', 6: '第6課 外出', 7: '第7課 買い物', 8: '第8課 プレゼント',
-    9: '第9課 スポーツ', 10: '第10課 料理', 11: '第11課 着物', 12: '第12課 計画',
-    13: '第13課 思い出', 14: '第14課 見物'
-  };
+  const lessonTitles = {};
+  for (let i = 1; i <= 24; i++) {
+    lessonTitles[i] = `第${i}課`;
+  }
 
   if (words.length === 0) {
     return `
@@ -26,7 +42,6 @@ async function renderLearn(lessonId) {
     `;
   }
 
-  // Initialize session
   learnSession = {
     lessonId,
     words,
@@ -35,7 +50,10 @@ async function renderLearn(lessonId) {
     unknown: [],
     batchStartTime: Date.now(),
     lessonTitle: lessonTitles[lessonId] || `第${lessonId}課`,
+    gradient: pickGradient(),
   };
+
+  learnRevealed = false;
 
   return renderLearnCard(learnSession);
 }
@@ -44,120 +62,109 @@ function renderLearnCard(session) {
   const word = session.words[session.currentIndex];
   const progress = session.currentIndex + 1;
   const total = session.words.length;
+  const bg = session.gradient;
 
   return `
-    <div class="learn-screen fade-in">
+    <div class="learn-bg" style="background: ${bg};"></div>
+    <div class="learn-container fade-in">
       <!-- Progress -->
-      <div style="padding:0 var(--space-md); margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <span style="font-size:0.85rem; color:var(--color-text-secondary);">${session.lessonTitle}</span>
-          <span style="font-size:0.85rem; font-weight:600;">${progress} / ${total}</span>
+      <div class="learn-progress">
+        <div class="learn-progress-bar-wrap">
+          <div class="learn-progress-bar-fill" style="width:${(progress / total) * 100}%"></div>
         </div>
-        <div class="progress-bar">
-          <div class="progress-bar-fill" style="width:${(progress / total) * 100}%"></div>
-        </div>
+        <span class="learn-progress-text">${progress}/${total}</span>
       </div>
 
-      <!-- Flashcard -->
-      <div style="padding:0 var(--space-md);">
-        <div class="card-flip" style="height:320px;">
-          <div class="card-flip-inner" id="learnCard"
-               data-word-id="${word.localId}"
-               data-flipped="false">
-            <!-- Front: Japanese -->
-            <div class="card-front">
-              <div style="text-align:center;">
-                <div style="font-size:2rem; font-weight:700; font-family:var(--font-jp); margin-bottom:8px;">
-                  ${escapeHTML(word.japanese)}
-                </div>
-                <div style="font-size:1rem; font-family:var(--font-jp); color:var(--color-text-secondary);">
-                  ${escapeHTML(word.reading)}
-                </div>
-                ${word.partOfSpeech ? `
-                  <div style="margin-top:8px;">
-                    <span class="badge badge-new">${escapeHTML(word.partOfSpeech)}</span>
-                  </div>
-                ` : ''}
-                <div style="margin-top:24px; font-size:0.85rem; color:var(--color-text-light);">
-                  👆 点击翻转 或 左右滑动
-                </div>
-              </div>
-              <button class="btn btn-ghost btn-small" style="position:absolute; top:8px; right:8px;"
-                      onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
-                🔊
-              </button>
-            </div>
-
-            <!-- Back: Meaning + Example -->
-            <div class="card-back">
-              <div style="text-align:center;">
-                <div style="font-size:1.5rem; font-weight:600; margin-bottom:8px;">
-                  ${escapeHTML(word.meaning)}
-                </div>
-                ${word.exampleSentence ? `
-                  <div style="margin-top:16px; padding:12px; background:var(--color-bg); border-radius:var(--radius-sm); text-align:left;">
-                    <div style="font-size:0.9rem; font-family:var(--font-jp); margin-bottom:4px;">
-                      ${escapeHTML(word.exampleSentence)}
-                    </div>
-                    ${word.exampleReading ? `
-                      <div style="font-size:0.8rem; font-family:var(--font-jp); color:var(--color-text-secondary); margin-bottom:4px;">
-                        ${escapeHTML(word.exampleReading)}
-                      </div>
-                    ` : ''}
-                    <div style="font-size:0.85rem; color:var(--color-text-secondary);">
-                      ${escapeHTML(word.exampleMeaning)}
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
-              <button class="btn btn-ghost btn-small" style="position:absolute; top:8px; right:8px;"
-                      onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
-                🔊
-              </button>
-            </div>
+      <!-- Word Area (tap to reveal) -->
+      <div class="learn-word-area" id="learnWordArea" onclick="revealLearnMeaning()">
+        <div class="learn-word-japanese">${escapeHTML(word.japanese)}</div>
+        <div class="learn-word-reading">${escapeHTML(word.reading)}</div>
+        ${word.partOfSpeech ? `
+          <div class="learn-word-pos">
+            <span class="learn-word-pos-badge">${escapeHTML(word.partOfSpeech)}</span>
           </div>
-        </div>
+        ` : ''}
+        <div class="learn-word-hint" id="learnHint">轻触屏幕 显示释义</div>
       </div>
 
-      <!-- Buttons -->
-      <div style="display:flex; gap:16px; padding:16px var(--space-md);">
-        <button class="btn btn-danger btn-block" style="flex:1; padding:16px;"
-                onclick="onLearnUnknown()">
-          ✗ 不认识
+      <!-- Reveal Area (hidden until tap) -->
+      <div class="learn-reveal-area" id="learnRevealArea">
+        <div class="learn-meaning-divider"></div>
+        <div class="learn-meaning-text">${escapeHTML(word.meaning)}</div>
+        ${word.exampleSentence ? `
+          <div class="learn-example-box">
+            <div class="learn-example-jp">${escapeHTML(word.exampleSentence)}</div>
+            ${word.exampleReading ? `<div class="learn-example-reading">${escapeHTML(word.exampleReading)}</div>` : ''}
+            ${word.exampleMeaning ? `<div class="learn-example-cn">${escapeHTML(word.exampleMeaning)}</div>` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Audio button -->
+      <div style="display:flex; justify-content:center;">
+        <button class="learn-audio-btn" id="learnAudioBtn"
+                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
+          🔊
         </button>
-        <button class="btn btn-success btn-block" style="flex:1; padding:16px;"
-                onclick="onLearnKnown()">
-          ✓ 认识
+      </div>
+
+      <!-- Action Buttons (visible after reveal) -->
+      <div class="learn-actions" id="learnActions">
+        <button class="learn-btn learn-btn-unknown" onclick="onLearnUnknown()">
+          不认识
+        </button>
+        <button class="learn-btn learn-btn-known" onclick="onLearnKnown()">
+          认识了
         </button>
       </div>
     </div>
   `;
 }
 
+function revealLearnMeaning() {
+  if (learnRevealed) return;
+  learnRevealed = true;
+
+  const revealArea = document.getElementById('learnRevealArea');
+  const actions = document.getElementById('learnActions');
+  const hint = document.getElementById('learnHint');
+
+  if (revealArea) revealArea.classList.add('show');
+  if (actions) actions.classList.add('show');
+  if (hint) hint.style.opacity = '0';
+}
+
 function setupLearnCardListeners() {
-  const cardInner = document.querySelector('#learnCard');
-  if (!cardInner) return;
+  learnRevealed = false;
 
-  // Tap to flip
-  cardInner.addEventListener('click', (e) => {
-    if (e.target.closest('button')) return;
-    cardInner.classList.toggle('flipped');
-  });
+  // Prevent horizontal swipe from triggering browser navigation
+  const container = document.querySelector('.learn-container');
+  if (container) {
+    container.addEventListener('touchmove', function(e) {
+      // Block horizontal swipe
+      const touch = e.touches[0];
+      if (!touch) return;
+      // We allow vertical scroll, but block horizontal
+      // This is handled by touch-action: pan-y in CSS
+    }, { passive: true });
+  }
 
-  // Swipe gestures
-  setupSwipe(cardInner,
-    () => onLearnUnknown(),  // swipe left = don't know
-    () => onLearnKnown()     // swipe right = know
-  );
+  // TTS auto-play on card load (if setting enabled)
+  (async () => {
+    const autoPlay = await getSetting('autoPlayAudio', false);
+    if (autoPlay && learnSession) {
+      const word = learnSession.words[learnSession.currentIndex];
+      setTimeout(() => TTS.speakWord(word.japanese), 400);
+    }
+  })();
 }
 
 async function onLearnKnown() {
-  if (!learnSession) return;
+  if (!learnSession || !learnRevealed) return;
+
   const word = learnSession.words[learnSession.currentIndex];
 
-  // Mark as known, set initial learning state
   await rateWord(word.localId, 3, 'learn', 0);
-  // Update to learning status with first review tomorrow
   await updateLearningState(word.localId, {
     status: 'learning',
     interval: 0,
@@ -169,32 +176,31 @@ async function onLearnKnown() {
   });
 
   learnSession.known.push(word);
-  await showFeedbackAndNext(true);
+  await advanceLearnCard();
 }
 
 async function onLearnUnknown() {
-  if (!learnSession) return;
+  if (!learnSession || !learnRevealed) return;
+
   const word = learnSession.words[learnSession.currentIndex];
 
-  // Mark as still new (quality 1 = incorrect)
   await rateWord(word.localId, 1, 'learn', 0);
 
   learnSession.unknown.push(word);
-  await showFeedbackAndNext(false);
+  await advanceLearnCard();
 }
 
-async function showFeedbackAndNext(isCorrect) {
-  await new Promise(resolve => {
-    showRatingFeedback(isCorrect ? 4 : 1, resolve);
-  });
-
+async function advanceLearnCard() {
   learnSession.currentIndex++;
 
   if (learnSession.currentIndex >= learnSession.words.length) {
-    // Session complete
     await renderLearnComplete();
   } else {
-    // Next card
+    learnRevealed = false;
+    // Update gradient periodically
+    if (learnSession.currentIndex % 5 === 0) {
+      learnSession.gradient = pickGradient();
+    }
     const app = document.getElementById('app');
     app.innerHTML = renderLearnCard(learnSession);
     setupLearnCardListeners();
@@ -206,57 +212,54 @@ async function renderLearnComplete() {
   const known = learnSession.known.length;
   const unknown = learnSession.unknown.length;
   const duration = Date.now() - learnSession.batchStartTime;
+  const bg = learnSession.gradient;
 
-  // Update lesson progress
   const progress = await getLessonProgress(learnSession.lessonId);
 
-  // Show mini celebration
   if (known >= total * 0.7) {
     setTimeout(showConfetti, 300);
   }
 
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div class="scale-in" style="text-align:center; padding:var(--space-xl) var(--space-md);">
-      <div style="font-size:3rem; margin-bottom:12px;">${known >= total * 0.7 ? '🎉' : '📚'}</div>
-      <h2>本组学习完成！</h2>
-      <div style="display:flex; justify-content:center; gap:32px; margin:20px 0;">
-        <div>
-          <div style="font-size:2rem; font-weight:700; color:var(--color-success);">${known}</div>
-          <div style="font-size:0.85rem; color:var(--color-text-secondary);">认识</div>
+    <div class="learn-bg" style="background: ${bg};"></div>
+    <div class="learn-complete fade-in">
+      <div class="learn-complete-icon">${known >= total * 0.7 ? '🎉' : '📚'}</div>
+      <div class="learn-complete-title">本组学习完成</div>
+
+      <div class="learn-complete-stats">
+        <div class="learn-complete-stat">
+          <div class="learn-complete-stat-val" style="color:#34C759;">${known}</div>
+          <div class="learn-complete-stat-label">认识</div>
         </div>
-        <div>
-          <div style="font-size:2rem; font-weight:700; color:var(--color-danger);">${unknown}</div>
-          <div style="font-size:0.85rem; color:var(--color-text-secondary);">不认识</div>
+        <div class="learn-complete-stat">
+          <div class="learn-complete-stat-val" style="color:#FF3B30;">${unknown}</div>
+          <div class="learn-complete-stat-label">不认识</div>
         </div>
-        <div>
-          <div style="font-size:1.5rem; font-weight:700; color:var(--color-text-secondary);">${formatMinutes(duration)}</div>
-          <div style="font-size:0.85rem; color:var(--color-text-secondary);">用时</div>
+        <div class="learn-complete-stat">
+          <div class="learn-complete-stat-val" style="font-size:1.5rem;">${formatMinutes(duration)}</div>
+          <div class="learn-complete-stat-label">用时</div>
         </div>
       </div>
 
-      <div class="card" style="margin-top:16px; text-align:center;">
-        <div style="font-size:0.9rem; color:var(--color-text-secondary);">
-          ${learnSession.lessonTitle}
-        </div>
-        <div class="progress-bar" style="margin-top:8px;">
-          <div class="progress-bar-fill" style="width:${progress.progress}%"></div>
-        </div>
-        <div style="font-size:0.85rem; color:var(--color-text-secondary); margin-top:4px;">
-          本课进度 ${progress.learnedWords}/${progress.totalWords}
+      <div class="learn-complete-card">
+        <div style="font-size:0.9rem; opacity:0.7;">${learnSession.lessonTitle}</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px; justify-content:center;">
+          <div style="flex:1; height:4px; background:rgba(255,255,255,0.15); border-radius:2px; overflow:hidden;">
+            <div style="height:100%; background:rgba(255,255,255,0.7); border-radius:2px; width:${progress.progress}%; transition:width 0.6s ease;"></div>
+          </div>
+          <span style="font-size:0.8rem; opacity:0.6;">${progress.learnedWords}/${progress.totalWords}</span>
         </div>
       </div>
 
-      <div style="display:flex; gap:12px; margin-top:20px; justify-content:center;">
-        <button class="btn btn-outline" onclick="navigate('lesson', {lessonId: ${learnSession.lessonId}})">
+      <div class="learn-complete-actions">
+        <button class="learn-complete-btn" onclick="navigate('lesson', {lessonId: ${learnSession.lessonId}})">
           返回课程
         </button>
-        <button class="btn btn-primary" onclick="navigate('quiz', {lessonId: ${learnSession.lessonId}})">
-          测试一下 📝
+        <button class="learn-complete-btn primary" onclick="navigate('quiz', {lessonId: ${learnSession.lessonId}})">
+          测验一下 📝
         </button>
       </div>
     </div>
   `;
 }
-
-// setupLearnCardListeners is called by app.js setupCurrentView

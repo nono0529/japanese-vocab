@@ -1,14 +1,24 @@
 /* ============================
    不背日语 — SRS Review View
+   不背单词 Style
    ============================ */
 
 let reviewSession = null;
+let reviewRevealed = false;
+
+const REVIEW_GRADIENTS = [
+  'linear-gradient(160deg, #1B1B2F 0%, #2C2C54 50%, #3D3D6B 100%)',
+  'linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
+  'linear-gradient(160deg, #141E30 0%, #243B55 100%)',
+  'linear-gradient(160deg, #232526 0%, #3A3D40 100%)',
+  'linear-gradient(160deg, #0C0C1D 0%, #1A1A3E 50%, #16213E 100%)',
+  'linear-gradient(160deg, #2C3E50 0%, #1A252F 100%)',
+];
 
 async function renderReview() {
   const batchSize = parseInt(await getSetting('reviewBatchSize', '20'));
   const dueWordsState = await getWordsDueForReview(batchSize);
 
-  // Fetch full word data for each due word
   const dueWords = [];
   for (const state of dueWordsState) {
     const word = await getWord(state.wordId);
@@ -33,7 +43,10 @@ async function renderReview() {
     currentIndex: 0,
     ratings: [],
     startTime: Date.now(),
+    gradient: REVIEW_GRADIENTS[Math.floor(Math.random() * REVIEW_GRADIENTS.length)],
   };
+
+  reviewRevealed = false;
 
   return renderReviewCard(reviewSession);
 }
@@ -42,102 +55,102 @@ function renderReviewCard(session) {
   const word = session.words[session.currentIndex];
   const progress = session.currentIndex + 1;
   const total = session.words.length;
+  const bg = session.gradient;
+
+  // Status label
+  const statusLabel = word.state.status === 'learning' ? '新学' : '复习';
+  const lapseInfo = word.state.lapses > 0
+    ? ` · 遗忘${word.state.lapses}次`
+    : '';
 
   return `
-    <div class="review-screen fade-in">
+    <div class="learn-bg" style="background: ${bg};"></div>
+    <div class="learn-container fade-in">
       <!-- Progress -->
-      <div style="padding:0 var(--space-md); margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <span style="font-size:0.85rem; color:var(--color-text-secondary);">
-            ${word.state.status === 'learning' ? '📗 学习' : '📘 复习'} · 第${word.lessonId}課
-          </span>
-          <span style="font-size:0.85rem; font-weight:600;">${progress} / ${total}</span>
+      <div class="learn-progress">
+        <div class="learn-progress-bar-wrap">
+          <div class="learn-progress-bar-fill" style="width:${(progress / total) * 100}%"></div>
         </div>
-        <div class="progress-bar">
-          <div class="progress-bar-fill" style="width:${(progress / total) * 100}%"></div>
-        </div>
+        <span class="learn-progress-text">${progress}/${total}</span>
       </div>
 
-      <!-- Review Card -->
-      <div style="padding:0 var(--space-md);">
-        <div class="card-flip" style="height:300px;">
-          <div class="card-flip-inner" id="reviewCard">
-            <!-- Front: Japanese (try to recall) -->
-            <div class="card-front">
-              <div style="text-align:center;">
-                <div style="font-size:2rem; font-weight:700; font-family:var(--font-jp); margin-bottom:8px;">
-                  ${escapeHTML(word.japanese)}
-                </div>
-                <div style="font-size:1rem; font-family:var(--font-jp); color:var(--color-text-secondary);">
-                  ${escapeHTML(word.reading)}
-                </div>
-                <div style="margin-top:20px; font-size:0.9rem; color:var(--color-text-light);">
-                  👆 点击回想答案
-                </div>
-              </div>
-              <button class="btn btn-ghost btn-small" style="position:absolute; top:8px; right:8px;"
-                      onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}');">
-                🔊
-              </button>
-            </div>
+      <!-- Status info -->
+      <div style="text-align:center; padding-top:4px;">
+        <span style="font-size:0.8rem; color:rgba(255,255,255,0.5);">
+          ${statusLabel} · 第${word.lessonId}課${lapseInfo}
+        </span>
+      </div>
 
-            <!-- Back: Answer + Example -->
-            <div class="card-back">
-              <div style="text-align:center;">
-                <div style="font-size:1.5rem; font-weight:600; margin-bottom:4px;">
-                  ${escapeHTML(word.meaning)}
-                </div>
-                ${word.exampleSentence ? `
-                  <div style="margin-top:12px; padding:10px; background:var(--color-bg); border-radius:var(--radius-sm); text-align:left;">
-                    <div style="font-size:0.85rem; font-family:var(--font-jp);">
-                      ${escapeHTML(word.exampleSentence)}
-                    </div>
-                    <div style="font-size:0.8rem; color:var(--color-text-secondary); margin-top:4px;">
-                      ${escapeHTML(word.exampleMeaning)}
-                    </div>
-                  </div>
-                ` : ''}
-                ${word.state.lapses > 0 ? `
-                  <div style="margin-top:8px; font-size:0.8rem; color:var(--color-danger);">
-                    已忘记 ${word.state.lapses} 次
-                  </div>
-                ` : ''}
-              </div>
-            </div>
+      <!-- Word Area -->
+      <div class="learn-word-area" id="reviewWordArea" onclick="revealReviewMeaning()">
+        <div class="learn-word-japanese">${escapeHTML(word.japanese)}</div>
+        <div class="learn-word-reading">${escapeHTML(word.reading)}</div>
+        ${word.partOfSpeech ? `
+          <div class="learn-word-pos">
+            <span class="learn-word-pos-badge">${escapeHTML(word.partOfSpeech)}</span>
           </div>
-        </div>
+        ` : ''}
+        <div class="learn-word-hint" id="reviewHint">轻触屏幕 回想答案</div>
       </div>
 
-      <!-- Hint: tap to reveal -->
-      <div style="text-align:center; margin-top:8px;">
+      <!-- Meaning reveal -->
+      <div class="learn-reveal-area" id="reviewRevealArea">
+        <div class="learn-meaning-divider"></div>
+        <div class="learn-meaning-text">${escapeHTML(word.meaning)}</div>
+        ${word.exampleSentence ? `
+          <div class="learn-example-box">
+            <div class="learn-example-jp">${escapeHTML(word.exampleSentence)}</div>
+            ${word.exampleReading ? `<div class="learn-example-reading">${escapeHTML(word.exampleReading)}</div>` : ''}
+            ${word.exampleMeaning ? `<div class="learn-example-cn">${escapeHTML(word.exampleMeaning)}</div>` : ''}
+          </div>
+        ` : ''}
       </div>
 
-      <!-- Quality Rating -->
-      <div style="padding:12px var(--space-md);">
-        <div style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:8px; text-align:center;">
-          你的记忆程度如何？
-        </div>
-        <div class="quality-buttons">
-          ${[0,1,2,3,4,5].map(q => `
-            <button class="quality-btn q${q}" onclick="onReviewRate(${q})">
-              <span class="quality-num">${q}</span>
-              <span class="quality-label">${getQualityLabel(q).short}</span>
-            </button>
-          `).join('')}
-        </div>
+      <!-- Audio button -->
+      <div style="display:flex; justify-content:center;">
+        <button class="learn-audio-btn" id="reviewAudioBtn"
+                onclick="event.stopPropagation(); TTS.speakWord('${escapeHTML(word.japanese).replace(/'/g, "\\'")}')">
+          🔊
+        </button>
+      </div>
+
+      <!-- Rating buttons (visible after reveal) -->
+      <div class="learn-actions" id="reviewActions">
+        <button class="learn-btn learn-btn-unknown" style="font-size:0.9rem;" onclick="onReviewRate(1)">
+          忘记了
+        </button>
+        <button class="learn-btn" style="flex:1; padding:16px; border:none; border-radius:var(--radius-xl); font-size:0.9rem; font-weight:600; font-family:var(--font-mixed); cursor:pointer; background:rgba(255,255,255,0.2); color:rgba(255,255,255,0.85); border:1.5px solid rgba(255,255,255,0.15); transition:all var(--transition-fast); letter-spacing:0.02em;" onclick="onReviewRate(3)">
+          模糊
+        </button>
+        <button class="learn-btn learn-btn-known" style="font-size:0.9rem;" onclick="onReviewRate(5)">
+          记得
+        </button>
       </div>
     </div>
   `;
 }
 
-async function onReviewRate(quality) {
-  if (!reviewSession) return;
-  const word = reviewSession.words[reviewSession.currentIndex];
+function revealReviewMeaning() {
+  if (reviewRevealed) return;
+  reviewRevealed = true;
 
-  // Show feedback
-  await new Promise(resolve => {
-    showRatingFeedback(quality, resolve);
-  });
+  const revealArea = document.getElementById('reviewRevealArea');
+  const actions = document.getElementById('reviewActions');
+  const hint = document.getElementById('reviewHint');
+
+  if (revealArea) revealArea.classList.add('show');
+  if (actions) actions.classList.add('show');
+  if (hint) hint.style.opacity = '0';
+}
+
+function setupReviewCardListener() {
+  reviewRevealed = false;
+}
+
+async function onReviewRate(quality) {
+  if (!reviewSession || !reviewRevealed) return;
+
+  const word = reviewSession.words[reviewSession.currentIndex];
 
   // Apply SM-2 algorithm
   await rateWord(word.localId, quality, 'review', 0);
@@ -148,6 +161,10 @@ async function onReviewRate(quality) {
   if (reviewSession.currentIndex >= reviewSession.words.length) {
     await renderReviewComplete();
   } else {
+    reviewRevealed = false;
+    if (reviewSession.currentIndex % 5 === 0) {
+      reviewSession.gradient = REVIEW_GRADIENTS[Math.floor(Math.random() * REVIEW_GRADIENTS.length)];
+    }
     const app = document.getElementById('app');
     app.innerHTML = renderReviewCard(reviewSession);
   }
@@ -158,10 +175,10 @@ async function renderReviewComplete() {
   const correct = reviewSession.ratings.filter(r => r.quality >= 3).length;
   const incorrect = total - correct;
   const accuracy = Math.round((correct / total) * 100);
+  const bg = reviewSession.gradient;
 
   if (accuracy >= 80) setTimeout(showConfetti, 300);
 
-  // Update streak
   await updateStreak();
   const streak = await getSetting('streak', 0);
 
@@ -170,50 +187,37 @@ async function renderReviewComplete() {
 
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div class="scale-in" style="text-align:center; padding:var(--space-xl) var(--space-md);">
-      <div style="font-size:3rem; margin-bottom:12px;">${accuracy >= 80 ? '🎉' : '💪'}</div>
-      <h2>复习完成！</h2>
-      <div class="streak-badge" style="justify-content:center; margin:8px 0;">
-        🔥 ${streak} 天
-      </div>
+    <div class="learn-bg" style="background: ${bg};"></div>
+    <div class="learn-complete fade-in">
+      <div class="learn-complete-icon">${accuracy >= 80 ? '🎉' : '💪'}</div>
+      <div class="learn-complete-title">复习完成</div>
+      <div style="font-size:1.1rem; opacity:0.7; margin-bottom:8px;">🔥 ${streak} 天连续</div>
 
-      <div style="display:flex; justify-content:center; gap:32px; margin:20px 0;">
-        <div>
-          <div style="font-size:2rem; font-weight:700; color:var(--color-success);">${correct}</div>
-          <div style="font-size:0.85rem; color:var(--color-text-secondary);">正确</div>
+      <div class="learn-complete-stats">
+        <div class="learn-complete-stat">
+          <div class="learn-complete-stat-val" style="color:#34C759;">${correct}</div>
+          <div class="learn-complete-stat-label">记得</div>
         </div>
-        <div>
-          <div style="font-size:2rem; font-weight:700; color:var(--color-danger);">${incorrect}</div>
-          <div style="font-size:0.85rem; color:var(--color-text-secondary);">需要加强</div>
+        <div class="learn-complete-stat">
+          <div class="learn-complete-stat-val" style="color:#FF3B30;">${incorrect}</div>
+          <div class="learn-complete-stat-label">需加强</div>
         </div>
-        <div>
-          <div style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">${accuracy}%</div>
-          <div style="font-size:0.85rem; color:var(--color-text-secondary);">正确率</div>
-        </div>
-      </div>
-
-      <div class="card" style="text-align:center; margin-top:12px;">
-        <div style="font-size:0.9rem; color:var(--color-text-secondary);">
-          明天约有 ${tomorrowCount} 个单词需要复习
+        <div class="learn-complete-stat">
+          <div class="learn-complete-stat-val" style="font-size:1.5rem; color:#5B8DEF;">${accuracy}%</div>
+          <div class="learn-complete-stat-label">正确率</div>
         </div>
       </div>
 
-      <div style="display:flex; gap:12px; margin-top:20px; justify-content:center;">
-        <button class="btn btn-outline" onclick="navigate('home')">返回首页</button>
+      <div class="learn-complete-card">
+        <div style="font-size:0.9rem; opacity:0.7;">明天约有 ${tomorrowCount} 个单词需要复习</div>
+      </div>
+
+      <div class="learn-complete-actions">
+        <button class="learn-complete-btn" onclick="navigate('home')">返回首页</button>
         ${tomorrowCount > 0 ? `
-          <button class="btn btn-primary" onclick="navigate('review')">继续复习</button>
+          <button class="learn-complete-btn primary" onclick="navigate('review')">继续复习</button>
         ` : ''}
       </div>
     </div>
   `;
-}
-
-function setupReviewCardListener() {
-  const card = document.querySelector('#reviewCard');
-  if (card) {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return;
-      card.classList.toggle('flipped');
-    });
-  }
 }

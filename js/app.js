@@ -99,6 +99,15 @@ function updateTopBar(title) {
                    AppState.currentRoute.startsWith('#learn/') ||
                    AppState.currentRoute.startsWith('#quiz/');
 
+  // Transparent top bar for learn/review screens (blends with gradient bg)
+  const isImmersive = AppState.currentRoute.startsWith('#learn/') ||
+                      AppState.currentRoute === '#review';
+  if (isImmersive) {
+    topBar.classList.add('transparent');
+  } else {
+    topBar.classList.remove('transparent');
+  }
+
   topBar.innerHTML = `
     ${showBack ? `<button class="top-bar-back" onclick="window.history.back()">←</button>` : ''}
     <span class="top-bar-title">${escapeHTML(title)}</span>
@@ -226,7 +235,26 @@ async function bootstrap() {
   });
   updateOfflineBanner();
 
-  // 9. Handle back button for sub-screens
+  // 9. Prevent browser swipe-back gesture
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length !== 1) return;
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    // If primarily horizontal swipe near the edge of screen, block it
+    if (dx > dy && dx > 10 && (touchStartX < 25 || touchStartX > window.innerWidth - 25)) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // 10. Handle back button for sub-screens
   window.addEventListener('popstate', () => {
     // Hash change will trigger handleRoute
   });

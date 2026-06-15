@@ -282,7 +282,7 @@ function renderQuizQuestion(session) {
       <!-- Header -->
       <div style="padding:12px var(--space-md); display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:0.85rem; color:var(--color-text-secondary);">
-          第${session.lessonId}課 · ${getQuizModeName(session.mode)}
+          ${typeof LESSON_TITLES !== 'undefined' ? (LESSON_TITLES[session.lessonId] || `第${session.lessonId}課`) : `第${session.lessonId}課`} · ${getQuizModeName(session.mode)}
           ${session.retryRound > 0 ? ` · 第${session.retryRound + 1}轮` : ''}
         </span>
         <span style="font-size:0.85rem; font-weight:600;">${progress} / ${total}</span>

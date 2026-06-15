@@ -111,8 +111,7 @@ async function toggleTTSSetting() {
 }
 
 async function updateTTSSpeed(rate) {
-  await TTS.setRate(parseFloat(rate));
-  await setSetting('ttsRate', rate);
+  await TTS.setRate(parseFloat(rate)); // TTS.setRate already saves to settings
   showToast('朗读速度已更新 ✓', 1500);
 }
 

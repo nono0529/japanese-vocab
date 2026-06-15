@@ -269,9 +269,6 @@ async function initSettings() {
     ttsEnabled: 'true',
     ttsRate: '0.9',
     quizSize: '10',
-    themeColor: '#4A90D9',
-    vocabularyLoaded: false,
-    onboardingComplete: false,
     streak: 0,
     lastActiveDate: ''
   };

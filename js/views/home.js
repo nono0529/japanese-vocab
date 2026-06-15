@@ -31,7 +31,7 @@ async function renderHome() {
         </div>
         <div style="width:1px; background:var(--color-border);"></div>
         <div style="text-align:center;">
-          <div style="font-size:1.5rem; font-weight:700; color:#FF9500;">${reviewedToday}</div>
+          <div style="font-size:1.5rem; font-weight:700; color:var(--color-warning);">${reviewedToday}</div>
           <div style="font-size:0.78rem; color:var(--color-text-secondary);">今日复习</div>
         </div>
       </div>

@@ -208,7 +208,7 @@ async function renderReviewComplete() {
           <div class="learn-complete-stat-label">需加强</div>
         </div>
         <div class="learn-complete-stat">
-          <div class="learn-complete-stat-val" style="font-size:1.5rem; color:#5B8DEF;">${accuracy}%</div>
+          <div class="learn-complete-stat-val" style="font-size:1.5rem; color:var(--color-primary);">${accuracy}%</div>
           <div class="learn-complete-stat-label">正确率</div>
         </div>
       </div>

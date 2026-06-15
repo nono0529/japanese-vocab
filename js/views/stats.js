@@ -5,12 +5,7 @@
 
 let statsMode = 'month'; // 'week' | 'month'
 
-function todayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-function formatISO(d) {
+function formatISOLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
@@ -27,7 +22,7 @@ function getCurrentWeekDates() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    dates.push({ date: formatISO(d), day: d.getDate(), weekday: i });
+    dates.push({ date: formatISOLocal(d), day: d.getDate(), weekday: i });
   }
   return dates;
 }
@@ -42,7 +37,7 @@ function getCurrentMonthDates() {
   const dates = [];
   for (let d = 1; d <= lastDay; d++) {
     const date = new Date(year, month, d);
-    dates.push({ date: formatISO(date), day: d, weekday: date.getDay() });
+    dates.push({ date: formatISOLocal(date), day: d, weekday: date.getDay() });
   }
   return dates;
 }
@@ -56,17 +51,15 @@ async function renderStats() {
     ? getCurrentWeekDates()
     : getCurrentMonthDates();
 
-  // Fetch stats for each date
-  const days = [];
-  for (const cd of calendarDates) {
-    // Don't fetch future dates
+  // Batch-fetch all stats at once
+  const dateKeys = calendarDates.map(cd => cd.date);
+  const statRows = await db.dailyStats.bulkGet(dateKeys);
+  const days = calendarDates.map((cd, i) => {
     if (cd.date > today) {
-      days.push({ date: cd.date, wordsLearned: 0, wordsReviewed: 0, isFuture: true });
-    } else {
-      const row = await db.dailyStats.get(cd.date);
-      days.push(row || { date: cd.date, wordsLearned: 0, wordsReviewed: 0 });
+      return { date: cd.date, wordsLearned: 0, wordsReviewed: 0, isFuture: true };
     }
-  }
+    return statRows[i] || { date: cd.date, wordsLearned: 0, wordsReviewed: 0 };
+  });
 
   const streak = await getSetting('streak', 0);
   const dailyGoal = parseInt(await getSetting('dailyNewWordGoal', '10'));

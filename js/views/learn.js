@@ -451,11 +451,6 @@ async function addToWordbook(wordId) {
   if (menu) menu.remove();
 }
 
-async function getWordbookItems() {
-  const raw = await getSetting('wordbook', '[]');
-  try { return JSON.parse(raw); } catch { return []; }
-}
-
 function setupLearnFlowListeners() {
   autoPlayLearnWord();
 }

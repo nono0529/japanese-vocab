@@ -1,32 +1,95 @@
 /* ============================
-   不背日语 — Statistics View v3
-   不背单词 Style: Week/Month toggle, color bars
+   不背日语 — Statistics View v4
+   周/月对齐现实日历
    ============================ */
 
 let statsMode = 'month'; // 'week' | 'month'
 
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/** Get dates for current calendar week (Mon ~ Sun) */
+function getCurrentWeekDates() {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ...
+  // Monday of this week
+  const monday = new Date(today);
+  const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days
+  monday.setDate(today.getDate() + offset);
+
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push({ date: formatISO(d), day: d.getDate(), weekday: i });
+  }
+  return dates;
+}
+
+/** Get dates for current calendar month */
+function getCurrentMonthDates() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-based
+  const lastDay = new Date(year, month + 1, 0).getDate(); // Last day of month
+
+  const dates = [];
+  for (let d = 1; d <= lastDay; d++) {
+    const date = new Date(year, month, d);
+    dates.push({ date: formatISO(date), day: d, weekday: date.getDay() });
+  }
+  return dates;
+}
+
 async function renderStats() {
-  const daysToShow = statsMode === 'week' ? 7 : 30;
-  const recentStats = await getRecentDailyStats(daysToShow);
+  const weekDays = ['日','一','二','三','四','五','六'];
+  const today = todayISO();
+
+  // Generate calendar dates
+  const calendarDates = statsMode === 'week'
+    ? getCurrentWeekDates()
+    : getCurrentMonthDates();
+
+  // Fetch stats for each date
+  const days = [];
+  for (const cd of calendarDates) {
+    // Don't fetch future dates
+    if (cd.date > today) {
+      days.push({ date: cd.date, wordsLearned: 0, wordsReviewed: 0, isFuture: true });
+    } else {
+      const row = await db.dailyStats.get(cd.date);
+      days.push(row || { date: cd.date, wordsLearned: 0, wordsReviewed: 0 });
+    }
+  }
+
   const streak = await getSetting('streak', 0);
   const dailyGoal = parseInt(await getSetting('dailyNewWordGoal', '10'));
-
   const totalWordsLearned = await db.learningState.where('status').notEqual('new').count();
   const totalWords = await db.words.count();
   const totalReviews = await db.reviewHistory.where('mode').equals('review').count();
 
-  const days = [...recentStats].reverse(); // newest last for chart
-
-  // Today
-  const today = days.length > 0 ? days[days.length - 1] : null;
-  const todayLearned = today ? today.wordsLearned : 0;
-  const todayReviewed = today ? today.wordsReviewed : 0;
+  // Today stats
+  const todayStats = days.find(d => d.date === today);
+  const todayLearned = todayStats ? todayStats.wordsLearned : 0;
+  const todayReviewed = todayStats ? todayStats.wordsReviewed : 0;
 
   // Max value for chart scaling
-  const maxVal = Math.max(1, ...days.map(d => Math.max(d.wordsLearned || 0, d.wordsReviewed || 0)));
+  const maxVal = Math.max(1, ...days.filter(d => !d.isFuture).map(d => Math.max(d.wordsLearned || 0, d.wordsReviewed || 0)));
 
-  // Weekday labels for week mode
-  const weekDays = ['日','一','二','三','四','五','六'];
+  // Title
+  const now = new Date();
+  const monthLabel = `${now.getFullYear()}年${now.getMonth()+1}月`;
+  const weekLabel = (() => {
+    const cd = getCurrentWeekDates();
+    const first = cd[0], last = cd[6];
+    return `${first.date.slice(5)} ~ ${last.date.slice(5)}`;
+  })();
 
   return `
     <div class="fade-in" style="padding-bottom:12px;">
@@ -48,7 +111,7 @@ async function renderStats() {
 
       <!-- Today -->
       <div class="card" style="text-align:center; margin:0 var(--space-md) 14px;">
-        <div style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:8px;">📅 今日</div>
+        <div style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:8px;">📅 今日 ${today.slice(5)}</div>
         <div style="display:flex; justify-content:center; gap:24px;">
           <div>
             <span style="font-size:1.3rem; font-weight:700; color:var(--color-primary);">${todayLearned}</span>
@@ -65,7 +128,7 @@ async function renderStats() {
 
       <!-- Week/Month Toggle -->
       <div class="stats-header">
-        <span class="section-title">${statsMode === 'week' ? '最近7天' : '最近30天'}</span>
+        <span class="section-title">${statsMode === 'week' ? '本周 ' + weekLabel : monthLabel}</span>
         <div style="display:flex; align-items:center; gap:12px;">
           <div class="segmented-control">
             <button class="segmented-item ${statsMode === 'week' ? 'active' : ''}" onclick="switchStatsMode('week')">周</button>
@@ -76,26 +139,30 @@ async function renderStats() {
       </div>
 
       <!-- Bar Chart -->
-      <div style="padding:8px var(--space-md) 0;">
-        <div class="bar-chart">
+      <div style="padding:8px var(--space-md) 0; overflow-x:auto;">
+        <div class="bar-chart" style="${statsMode === 'month' ? 'gap:1px;' : ''}">
           ${days.map((day) => {
             const learnH = maxVal > 0 ? ((day.wordsLearned || 0) / maxVal * 100) : 0;
             const reviewH = maxVal > 0 ? ((day.wordsReviewed || 0) / maxVal * 100) : 0;
-            const isToday = day.date === todayISO();
-            const dateStr = day.date.slice(5); // MM-DD
+            const isToday = day.date === today;
+            const isFuture = day.isFuture;
             const dayOfWeek = new Date(day.date).getDay();
             const hasData = (day.wordsLearned || 0) + (day.wordsReviewed || 0) > 0;
 
             const showLearnCount = learnH > 15;
             const showReviewCount = reviewH > 15;
+
             return `
-              <div class="bar-col ${isToday ? 'today' : ''}" title="${dateStr} 周${weekDays[dayOfWeek]}: 学${day.wordsLearned||0} 复${day.wordsReviewed||0}">
-                <div class="bar-stack">
+              <div class="bar-col ${isToday ? 'today' : ''} ${isFuture ? 'future' : ''}"
+                   title="${day.date.slice(5)} 周${weekDays[dayOfWeek]}: 学${day.wordsLearned||0} 复${day.wordsReviewed||0}">
+                <div class="bar-stack" style="${isFuture ? 'opacity:0.25;' : ''}">
                   ${reviewH > 0 ? `<div class="bar-review" style="height:${reviewH}%">${showReviewCount ? `<span class="bar-count">${day.wordsReviewed||0}</span>` : ''}</div>` : ''}
                   ${learnH > 0 ? `<div class="bar-learn" style="height:${learnH}%">${showLearnCount ? `<span class="bar-count">${day.wordsLearned||0}</span>` : ''}</div>` : ''}
                   ${!hasData ? `<div class="bar-empty"></div>` : ''}
                 </div>
-                <div class="bar-label">${statsMode === 'week' ? weekDays[dayOfWeek] : dateStr.slice(3)}</div>
+                <div class="bar-label ${isToday ? '' : ''}" style="${isFuture ? 'opacity:0.3;' : ''}">
+                  ${statsMode === 'week' ? weekDays[dayOfWeek] : day.day}
+                </div>
               </div>
             `;
           }).join('')}

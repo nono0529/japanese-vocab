@@ -78,13 +78,22 @@ async function renderLearnFlow() {
     await saveStoredBatch(batchWords.map(w => w.localId));
   }
 
+  // Load existing learnStreak from DB into session counts
+  const correctCounts = {};
+  for (const w of batchWords) {
+    const s = stateMap[w.localId];
+    if (s && s.learnStreak > 0) {
+      correctCounts[w.localId] = s.learnStreak;
+    }
+  }
+
   learnSession = {
     words: batchWords,
     currentIndex: 0,
     phase: 'question',
     correct: [],
     wrong: [],
-    correctCounts: {},
+    correctCounts: correctCounts,
     startTime: Date.now(),
     gradient: GRADS[Math.floor(Math.random() * GRADS.length)],
   };
@@ -239,13 +248,14 @@ function onLearnAnswer(choice, btnEl) {
 
   learnSession.phase = 'result';
 
+  // Play audio immediately while still in user-gesture context
+  if (isCorrect && word.reading) {
+    TTS.speakWord(word.reading);
+  }
+
   setTimeout(() => {
     const app = document.getElementById('app');
     app.innerHTML = renderResultView(learnSession);
-    // Auto-play audio when correct
-    if (isCorrect && word.reading) {
-      setTimeout(() => TTS.speakWord(word.reading), 200);
-    }
   }, 350);
 }
 
@@ -321,7 +331,7 @@ function autoPlayLearnWord() {
   if (!learnSession || learnSession.phase !== 'question') return;
   const word = learnSession.words[learnSession.currentIndex];
   if (word && word.reading) {
-    setTimeout(() => { TTS.speakWord(word.reading); }, 350);
+    TTS.speakWord(word.reading);
   }
 }
 

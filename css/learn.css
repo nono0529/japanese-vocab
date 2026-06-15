@@ -282,3 +282,94 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none; -webkit-user-select: none;
 }
+
+/* ---- Top-right menu button ---- */
+.learn-menu-btn {
+  background: none; border: none; color: rgba(255,255,255,0.4);
+  font-size: 1.4rem; cursor: pointer;
+  padding: 4px 8px; border-radius: 8px;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.learn-menu-btn:active { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.08); }
+
+/* ---- Popup menu ---- */
+.learn-popup-menu {
+  position: fixed; top: 60px; right: 16px; z-index: 300;
+  background: rgba(30,30,50,0.95);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
+  padding: 6px; min-width: 160px;
+  opacity: 0; transform: translateY(-8px);
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.learn-popup-menu.show { opacity: 1; transform: translateY(0); }
+.learn-popup-item {
+  padding: 12px 16px; border-radius: 10px;
+  color: rgba(255,255,255,0.85); font-size: 0.92rem;
+  cursor: pointer; transition: background 0.15s ease;
+}
+.learn-popup-item:active { background: rgba(255,255,255,0.08); }
+
+/* ---- Result Header ---- */
+.learn-result-header {
+  text-align: center; padding: 12px 0;
+  animation: fadeInDown 0.35s ease;
+}
+.learn-result-header .learn-result-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 700;
+  margin-bottom: 8px;
+}
+.learn-result-header.correct .learn-result-icon {
+  background: rgba(52,199,89,0.15); color: #34C759;
+}
+.learn-result-header.wrong .learn-result-icon {
+  background: rgba(255,59,48,0.15); color: #FF3B30;
+}
+.learn-result-label {
+  font-size: 0.95rem; font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ---- Result Word Display ---- */
+.learn-result-word {
+  text-align: center; padding: 8px 0 16px;
+  animation: fadeInUp 0.4s ease;
+}
+.learn-meaning-big {
+  font-size: 1.5rem; font-weight: 700;
+  color: rgba(255,255,255,0.95); margin-top: 12px;
+  letter-spacing: 0.03em;
+}
+
+/* ---- Result Example Card ---- */
+.learn-result-example {
+  background: rgba(0,0,0,0.2);
+  border-radius: 14px; padding: 16px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.06);
+  animation: slideUpFade 0.45s ease;
+}
+.learn-example-label {
+  font-size: 0.75rem; color: rgba(255,255,255,0.35);
+  letter-spacing: 0.04em; margin-bottom: 10px;
+}
+
+/* ---- Next/Complete Button ---- */
+.learn-next-btn {
+  width: 100%; padding: 16px;
+  border: none; border-radius: 14px;
+  background: rgba(255,255,255,0.92);
+  color: #0F2027;
+  font-size: 1rem; font-weight: 600;
+  font-family: var(--font-mixed); cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.03em;
+  animation: slideUpFade 0.5s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.learn-next-btn:active { transform: scale(0.96); opacity: 0.9; }
